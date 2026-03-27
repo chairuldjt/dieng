@@ -419,7 +419,18 @@ export default function AdminPage() {
             <div className="admin-maps-layout" style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '1rem', height: '700px' }}>
               <div ref={mapRef} className="admin-map-canvas" style={{ borderRadius: '1rem', border: '1px solid var(--glass-border)', zIndex: 1 }}></div>
               <div className="glass admin-map-sidebar" style={{ padding: '1.5rem', overflowY: 'auto' }}>
-                <h3 style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }} className="gradient-text">Pengunjung Aktif</h3>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.8rem', marginBottom: '1.5rem' }}>
+                  <h3 style={{ margin: 0, fontSize: '1.1rem' }} className="gradient-text">Pengunjung Aktif</h3>
+                  <button
+                    onClick={fetchData}
+                    disabled={isLoading}
+                    style={{ background: 'transparent', color: 'var(--primary)', border: 'none', cursor: 'pointer', fontSize: '1.15rem', flex: '0 0 auto' }}
+                    aria-label="Refresh peta pengunjung"
+                    title="Refresh peta pengunjung"
+                  >
+                    <i className={`fas fa-sync-alt ${isLoading ? 'fa-spin' : ''}`}></i>
+                  </button>
+                </div>
                 {locations.map(loc => {
                   const online = isOnline(loc.last_activity);
                   const mapsUrl = getGoogleMapsUrl(loc);
