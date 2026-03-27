@@ -1,30 +1,26 @@
 #!/bin/bash
 
-# --- Pesona Dieng Deployment Script ---
+# --- Pesona Dieng Server Deployment Script ---
 echo "----------------------------------------"
-echo "🚀 Memulai Proses Deployment..."
+echo "🚀 Memulai Update Website di Server..."
 echo "----------------------------------------"
 
-# 1. Bersihkan Cache (Opsional)
-# echo "🧹 Membersihkan folder build lama..."
-# rm -rf .next
+# 1. Tarik kode terbaru dari GitHub
+echo "📡 Menarik perubahan terbaru dari GitHub..."
+git pull origin master
 
-# 2. Tambahkan semua perubahan
-echo "📝 Menambahkan perubahan ke Git..."
-git add .
+# 2. Instal dependensi (jika ada perubahan di package.json)
+echo "📦 Menginstal dependensi baru..."
+npm install
 
-# 3. Commit dengan pesan otomatis atau custom
-if [ -z "$1" ]; then
-    MESSAGE="Update: $(date +'%Y-%m-%d %H:%M:%S')"
-else
-    MESSAGE="$1"
-fi
-git commit -m "$MESSAGE"
+# 3. Build ulang proyek Next.js
+echo "🏗️  Membangun ulang (Building) aplikasi..."
+npm run build
 
-# 4. Push ke GitHub
-echo "📤 Mengirim kode ke repositori utama..."
-git push origin master
+# 4. Restart server (Opsional, jika memakai PM2)
+# echo "♻️  Me-restart aplikasi (PM2)..."
+# pm2 restart dieng || pm2 start npm --name "dieng" -- start
 
 echo "----------------------------------------"
-echo "✅ Berhasil! Kode Anda kini sinkron di GitHub."
+echo "✅ Berhasil! Website Anda kini sudah versi terbaru."
 echo "----------------------------------------"
