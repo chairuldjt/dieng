@@ -13,7 +13,6 @@ export default function AdminPage() {
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
-  const tileLayerRef = useRef(null);
   const markersRef = useRef({});
 
   const requestAdminGps = (source = 'admin') => {
@@ -21,18 +20,18 @@ export default function AdminPage() {
     window.dispatchEvent(new CustomEvent('trigger-gps', { detail: { source } }));
   };
 
-  const refreshMapViewport = () => {
+  const refreshMapViewport = (withDelayedPass = false) => {
     if (!mapInstance.current) return;
 
     const rerender = () => {
       mapInstance.current?.invalidateSize();
-      tileLayerRef.current?.redraw?.();
     };
 
-    rerender();
-    [120, 420, 900].forEach((delay) => {
-      setTimeout(rerender, delay);
-    });
+    requestAnimationFrame(rerender);
+
+    if (withDelayedPass) {
+      setTimeout(rerender, 180);
+    }
   };
 
   const formatLocationSummary = (loc) => {
@@ -207,7 +206,6 @@ export default function AdminPage() {
       if (mapInstance.current) {
         mapInstance.current.remove();
         mapInstance.current = null;
-        tileLayerRef.current = null;
         markersRef.current = {};
       }
       return;
@@ -218,18 +216,13 @@ export default function AdminPage() {
         if (!mapRef.current || mapInstance.current) return;
 
         const map = L.map(mapRef.current).setView([-7.21, 109.91], 10);
-        const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '&copy; OpenStreetMap'
         }).addTo(map);
         mapInstance.current = map;
-        tileLayerRef.current = tileLayer;
 
         map.whenReady(() => {
-          refreshMapViewport();
-        });
-
-        tileLayer.on('load', () => {
-          refreshMapViewport();
+          refreshMapViewport(true);
         });
       });
     }
@@ -237,7 +230,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (activeTab === 'maps' && mapInstance.current) {
-      refreshMapViewport();
+      refreshMapViewport(true);
     }
   }, [activeTab]);
 
@@ -315,8 +308,6 @@ export default function AdminPage() {
             delete markersRef.current[markerId];
           }
         });
-
-        refreshMapViewport();
       });
     }
   }, [activeTab, locations]);
