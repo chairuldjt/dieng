@@ -111,8 +111,8 @@ export default function AdminPage() {
     try {
       setIsLoading(true);
       const [fRes, lRes] = await Promise.all([
-        fetch('/api/admin/feedback', { headers }),
-        fetch('/api/admin/locations', { headers })
+        fetch('/api/admin/feedback', { headers, cache: 'no-store' }),
+        fetch('/api/admin/locations', { headers, cache: 'no-store' })
       ]);
 
       if (fRes.status === 401 || lRes.status === 401) {
@@ -216,19 +216,38 @@ export default function AdminPage() {
   useEffect(() => {
     if (activeTab === 'maps' && mapInstance.current && locations.length > 0) {
       import('leaflet').then((L) => {
-        // Clear old markers if needed (simplified here for speed)
+        const nextIds = new Set();
+
         locations.forEach(loc => {
-          if (loc.latitude && loc.longitude && !markersRef.current[loc.id]) {
-            const online = isOnline(loc.last_activity);
-            const color = online ? '#10b981' : (loc.method === 'GPS' ? '#ef4444' : '#3b82f6');
-            const icon = L.divIcon({
-              className: 'custom-icon',
-              html: `<div style="background-color:${color}; width:12px; height:12px; border:2px solid white; border-radius:50%; box-shadow: 0 0 10px ${online ? '#10b981' : 'transparent'}"></div>`,
-              iconSize: [12, 12]
-            });
+          if (!loc.latitude || !loc.longitude) return;
+
+          nextIds.add(loc.id);
+
+          const online = isOnline(loc.last_activity);
+          const color = online ? '#10b981' : (loc.method === 'GPS' ? '#ef4444' : '#3b82f6');
+          const icon = L.divIcon({
+            className: 'custom-icon',
+            html: `<div style="background-color:${color}; width:12px; height:12px; border:2px solid white; border-radius:50%; box-shadow: 0 0 10px ${online ? '#10b981' : 'transparent'}"></div>`,
+            iconSize: [12, 12]
+          });
+          const popupHtml = `<b>${loc.device_model || 'Visitor'}</b><br>Status: ${online ? 'Online' : 'Offline'}<br>Lokasi: ${formatLocationSummary(loc) || 'Unknown'}<br>Method: ${loc.method}`;
+          const existingMarker = markersRef.current[loc.id];
+
+          if (existingMarker) {
+            existingMarker.setLatLng([loc.latitude, loc.longitude]);
+            existingMarker.setIcon(icon);
+            existingMarker.setPopupContent(popupHtml);
+          } else {
             const marker = L.marker([loc.latitude, loc.longitude], { icon }).addTo(mapInstance.current)
-              .bindPopup(`<b>${loc.device_model || 'Visitor'}</b><br>Status: ${online ? 'Online' : 'Offline'}<br>Lokasi: ${formatLocationSummary(loc) || 'Unknown'}<br>Method: ${loc.method}`);
+              .bindPopup(popupHtml);
             markersRef.current[loc.id] = marker;
+          }
+        });
+
+        Object.keys(markersRef.current).forEach((markerId) => {
+          if (!nextIds.has(Number(markerId))) {
+            markersRef.current[markerId].remove();
+            delete markersRef.current[markerId];
           }
         });
       });
