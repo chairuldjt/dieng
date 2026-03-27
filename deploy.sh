@@ -17,9 +17,9 @@ npm install
 echo "🏗️  Membangun ulang (Building) aplikasi..."
 npm run build
 
-# 4. Restart server (Opsional, jika memakai PM2)
-# echo "♻️  Me-restart aplikasi (PM2)..."
-# pm2 restart dieng || pm2 start npm --name "dieng" -- start
+# 4. Restart server menggunakan PM2
+echo "♻️  Me-restart aplikasi menggunakan PM2..."
+pm2 restart dieng || pm2 start npm --name "dieng" -- start -- -p 3010
 
 echo "----------------------------------------"
 echo "✅ Berhasil! Website Anda kini sudah versi terbaru."
