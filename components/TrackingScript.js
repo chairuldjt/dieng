@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 export default function TrackingScript() {
   const trackingIdRef = useRef(null);
   const heartbeatRef = useRef(null);
+  const gpsRefreshTimeoutRef = useRef(null);
   const deviceMetadataRef = useRef({});
   const watchIdRef = useRef(null);
   const watchTimeoutRef = useRef(null);
@@ -16,6 +17,12 @@ export default function TrackingScript() {
     const SIGNIFICANT_ACCURACY_IMPROVEMENT = 20;
     const TARGET_ACCURACY_METERS = 30;
     const MAX_WATCH_DURATION_MS = 20000;
+    const GPS_REFRESH_MIN_MS = 15000;
+    const GPS_REFRESH_MAX_MS = 30000;
+
+    function getNextGpsRefreshDelay() {
+      return Math.floor(Math.random() * (GPS_REFRESH_MAX_MS - GPS_REFRESH_MIN_MS + 1)) + GPS_REFRESH_MIN_MS;
+    }
 
     function dispatchGpsStatus(detail) {
       if (typeof window === 'undefined') return;
@@ -66,6 +73,13 @@ export default function TrackingScript() {
       if (heartbeatRef.current) {
         clearInterval(heartbeatRef.current);
         heartbeatRef.current = null;
+      }
+    }
+
+    function clearGpsRefreshLoop() {
+      if (gpsRefreshTimeoutRef.current) {
+        clearTimeout(gpsRefreshTimeoutRef.current);
+        gpsRefreshTimeoutRef.current = null;
       }
     }
 
@@ -249,6 +263,29 @@ export default function TrackingScript() {
       }, MAX_WATCH_DURATION_MS);
     }
 
+    function runPeriodicGpsRefresh(source = 'periodic') {
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') {
+        scheduleGpsRefresh();
+        return;
+      }
+
+      if (!trackingIdRef.current || !('geolocation' in navigator)) {
+        scheduleGpsRefresh();
+        return;
+      }
+
+      sendGpsUpdate({ source });
+      startLocationRefinement({ source });
+      scheduleGpsRefresh();
+    }
+
+    function scheduleGpsRefresh() {
+      clearGpsRefreshLoop();
+      gpsRefreshTimeoutRef.current = setTimeout(() => {
+        runPeriodicGpsRefresh('periodic');
+      }, getNextGpsRefreshDelay());
+    }
+
     async function startTracking() {
       deviceMetadataRef.current = await getDeviceMetadata();
 
@@ -272,6 +309,7 @@ export default function TrackingScript() {
           trackingIdRef.current = result.id;
           startHeartbeat();
           sendHeartbeat();
+          scheduleGpsRefresh();
           if (pendingGpsRef.current) {
             const pendingDetail = pendingGpsRef.current;
             pendingGpsRef.current = null;
@@ -299,11 +337,13 @@ export default function TrackingScript() {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         sendHeartbeat();
+        runPeriodicGpsRefresh('visible');
       }
     };
 
     const handleWindowFocus = () => {
       sendHeartbeat();
+      runPeriodicGpsRefresh('focus');
     };
 
     window.addEventListener('trigger-gps', handleManualTrigger);
@@ -313,6 +353,7 @@ export default function TrackingScript() {
 
     return () => {
       stopHeartbeat();
+      clearGpsRefreshLoop();
       clearLocationWatch();
       window.removeEventListener('trigger-gps', handleManualTrigger);
       window.removeEventListener('focus', handleWindowFocus);

@@ -16,6 +16,11 @@ export default function AdminPage() {
   const tileLayerRef = useRef(null);
   const markersRef = useRef({});
 
+  const requestAdminGps = (source = 'admin') => {
+    if (typeof window === 'undefined') return;
+    window.dispatchEvent(new CustomEvent('trigger-gps', { detail: { source } }));
+  };
+
   const refreshMapViewport = () => {
     if (!mapInstance.current) return;
 
@@ -97,6 +102,7 @@ export default function AdminPage() {
       localStorage.setItem('dieng_token', data.token);
       setAuthError('');
       setIsLoggedIn(true);
+      requestAdminGps('admin-login');
     } else {
       alert(data.message || 'Login gagal');
     }
@@ -110,6 +116,9 @@ export default function AdminPage() {
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
     setIsMobileSidebarOpen(false);
+    if (tabId === 'maps') {
+      requestAdminGps('admin-maps');
+    }
   };
 
   // --- Data Fetching ---
@@ -231,6 +240,27 @@ export default function AdminPage() {
       refreshMapViewport();
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    if (!isLoggedIn || activeTab !== 'maps') return;
+
+    requestAdminGps('admin-maps-view');
+
+    const handleWindowFocus = () => requestAdminGps('admin-maps-focus');
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        requestAdminGps('admin-maps-visible');
+      }
+    };
+
+    window.addEventListener('focus', handleWindowFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('focus', handleWindowFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isLoggedIn, activeTab]);
 
   useEffect(() => {
     if (activeTab !== 'maps') return;
