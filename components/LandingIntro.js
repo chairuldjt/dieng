@@ -73,7 +73,7 @@ export default function LandingIntro() {
               tinggi yang megah.
             </h1>
             <p className="landing-intro__copy animate-up animate-delay-2">
-              Untuk membuka pengalaman penuh dan menghitung simulasi biaya perjalanan, izinkan lokasi Anda saat menekan tombol di bawah ini.
+              Klik mulai untuk memulai perjalanan dan menikmati fitur yang ada
             </p>
             <div className="landing-intro__actions animate-up animate-delay-3">
               <button type="button" className="btn-primary" onClick={handleStartJourney}>
