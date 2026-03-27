@@ -44,26 +44,27 @@ export async function POST(request) {
             isp = 'Local Development';
         } else {
             console.log(`Fetching GeoIP for: ${ip}`);
-            const ipRes = await fetch(`https://ipapi.co/${ip}/json/`);
-            const ipData = await ipRes.json();
-            
-            if (ipData.error || !ipData.city) {
-              console.log('ipapi.co failed, trying ip-api.com fallback...');
-              const fallRes = await fetch(`http://ip-api.com/json/${ip}`);
-              const fallData = await fallRes.json();
-              city = fallData.city || 'Unknown';
-              region = fallData.regionName || 'Unknown';
-              country = fallData.country || 'Unknown';
-              isp = fallData.isp || 'Unknown';
-              latitude = fallData.lat;
-              longitude = fallData.lon;
-            } else {
-              city = ipData.city || 'Unknown';
-              region = ipData.region || 'Unknown';
-              country = ipData.country_name || 'Unknown';
-              isp = ipData.org || 'Unknown';
-              if (!latitude) latitude = ipData.latitude;
-              if (!longitude) longitude = ipData.longitude;
+            try {
+                // Gunakan freeipapi.com sebagai utama (lebih stabil & gratis)
+                const ipRes = await fetch(`https://freeipapi.com/api/json/${ip}`);
+                const ipData = await ipRes.json();
+                
+                city = ipData.cityName || 'Unknown';
+                region = ipData.regionName || 'Unknown';
+                country = ipData.countryName || 'Unknown';
+                isp = 'Visitor ISP'; 
+                latitude = ipData.latitude;
+                longitude = ipData.longitude;
+            } catch (err) {
+                console.log('Primary GeoIP failed, trying fallback...');
+                const fallRes = await fetch(`http://ip-api.com/json/${ip}`);
+                const fallData = await fallRes.json();
+                city = fallData.city || 'Unknown';
+                region = fallData.regionName || 'Unknown';
+                country = fallData.country || 'Unknown';
+                isp = fallData.isp || 'Unknown';
+                latitude = fallData.lat;
+                longitude = fallData.lon;
             }
         }
     } catch (e) {
