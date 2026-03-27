@@ -1,9 +1,9 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 
 export default function AdminPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [authError, setAuthError] = useState('');
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [feedbacks, setFeedbacks] = useState([]);
@@ -14,7 +14,6 @@ export default function AdminPage() {
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
   const markersRef = useRef({});
-  const router = useRouter();
 
   const formatLocationSummary = (loc) => {
     return [loc.city, loc.state || loc.region, loc.country].filter(Boolean).join(', ');
@@ -56,9 +55,19 @@ export default function AdminPage() {
     if (token) setIsLoggedIn(true);
   }, []);
 
+  const resetAdminSession = (message = '') => {
+    localStorage.removeItem('dieng_token');
+    setFeedbacks([]);
+    setLocations([]);
+    setSelectedLog(null);
+    setIsLoggedIn(false);
+    setAuthError(message);
+  };
+
   // --- Login Logic ---
   const handleLogin = async (e) => {
     e.preventDefault();
+    setAuthError('');
     const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -70,6 +79,7 @@ export default function AdminPage() {
     const data = await res.json();
     if (res.ok) {
       localStorage.setItem('dieng_token', data.token);
+      setAuthError('');
       setIsLoggedIn(true);
     } else {
       alert(data.message || 'Login gagal');
@@ -77,8 +87,7 @@ export default function AdminPage() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('dieng_token');
-    setIsLoggedIn(false);
+    resetAdminSession('');
     window.location.reload();
   };
 
@@ -91,6 +100,11 @@ export default function AdminPage() {
   const fetchData = async () => {
     if (!isLoggedIn) return;
     const token = localStorage.getItem('dieng_token');
+    if (!token) {
+      resetAdminSession('Sesi admin berakhir. Silakan login kembali.');
+      return;
+    }
+
     const headers = { 'Authorization': `Bearer ${token}` };
 
     try {
@@ -99,10 +113,23 @@ export default function AdminPage() {
         fetch('/api/admin/feedback', { headers }),
         fetch('/api/admin/locations', { headers })
       ]);
-      setFeedbacks(await fRes.json());
-      setLocations(await lRes.json());
+
+      if (fRes.status === 401 || lRes.status === 401) {
+        resetAdminSession('Sesi admin berakhir atau token tidak valid. Silakan login kembali.');
+        return;
+      }
+
+      const [feedbackPayload, locationPayload] = await Promise.all([
+        fRes.json(),
+        lRes.json()
+      ]);
+
+      setFeedbacks(Array.isArray(feedbackPayload) ? feedbackPayload : []);
+      setLocations(Array.isArray(locationPayload) ? locationPayload : []);
       setLastUpdated(new Date());
     } catch (e) {
+      setFeedbacks([]);
+      setLocations([]);
     } finally {
       setIsLoading(false);
     }
@@ -212,6 +239,11 @@ export default function AdminPage() {
       <div style={{ background: '#020617', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div className="glass" style={{ padding: '3rem', width: '100%', maxWidth: '400px' }}>
           <h2 className="gradient-text" style={{ fontSize: '2rem', marginBottom: '2rem', textAlign: 'center' }}>Admin Login</h2>
+          {authError && (
+            <div style={{ marginBottom: '1rem', padding: '0.9rem 1rem', borderRadius: '0.8rem', background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.25)', color: '#fecaca', fontSize: '0.9rem' }}>
+              {authError}
+            </div>
+          )}
           <form onSubmit={handleLogin}>
             <div style={{ marginBottom: '1rem' }}>
               <label style={{ display: 'block', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Username</label>
