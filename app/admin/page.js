@@ -13,7 +13,22 @@ export default function AdminPage() {
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
+  const tileLayerRef = useRef(null);
   const markersRef = useRef({});
+
+  const refreshMapViewport = () => {
+    if (!mapInstance.current) return;
+
+    const rerender = () => {
+      mapInstance.current?.invalidateSize();
+      tileLayerRef.current?.redraw?.();
+    };
+
+    rerender();
+    [120, 420, 900].forEach((delay) => {
+      setTimeout(rerender, delay);
+    });
+  };
 
   const formatLocationSummary = (loc) => {
     return [loc.city, loc.state || loc.region, loc.country].filter(Boolean).join(', ');
@@ -183,6 +198,7 @@ export default function AdminPage() {
       if (mapInstance.current) {
         mapInstance.current.remove();
         mapInstance.current = null;
+        tileLayerRef.current = null;
         markersRef.current = {};
       }
       return;
@@ -193,24 +209,43 @@ export default function AdminPage() {
         if (!mapRef.current || mapInstance.current) return;
 
         const map = L.map(mapRef.current).setView([-7.21, 109.91], 10);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '&copy; OpenStreetMap'
         }).addTo(map);
         mapInstance.current = map;
+        tileLayerRef.current = tileLayer;
 
-        setTimeout(() => {
-          map.invalidateSize();
-        }, 0);
+        map.whenReady(() => {
+          refreshMapViewport();
+        });
+
+        tileLayer.on('load', () => {
+          refreshMapViewport();
+        });
       });
     }
   }, [isLoggedIn, activeTab]);
 
   useEffect(() => {
     if (activeTab === 'maps' && mapInstance.current) {
-      setTimeout(() => {
-        mapInstance.current?.invalidateSize();
-      }, 0);
+      refreshMapViewport();
     }
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab !== 'maps') return;
+
+    const handleViewportRefresh = () => refreshMapViewport();
+
+    window.addEventListener('resize', handleViewportRefresh);
+    window.addEventListener('orientationchange', handleViewportRefresh);
+    window.addEventListener('pageshow', handleViewportRefresh);
+
+    return () => {
+      window.removeEventListener('resize', handleViewportRefresh);
+      window.removeEventListener('orientationchange', handleViewportRefresh);
+      window.removeEventListener('pageshow', handleViewportRefresh);
+    };
   }, [activeTab]);
 
   useEffect(() => {
@@ -250,6 +285,8 @@ export default function AdminPage() {
             delete markersRef.current[markerId];
           }
         });
+
+        refreshMapViewport();
       });
     }
   }, [activeTab, locations]);
