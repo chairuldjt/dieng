@@ -21,12 +21,27 @@ export async function POST(request) {
     const parser = new (UAParserLib.UAParser || UAParserLib)(userAgentStr);
     const browser = `${parser.getBrowser().name} (${parser.getBrowser().version})`;
     const os = `${parser.getOS().name} ${parser.getOS().version}`;
+    const device_model = parser.getDevice().model || parser.getDevice().vendor || parser.getOS().name || 'Desktop';
 
     // --- CASE 1: UPDATE EXISTING RECORD WITH GPS ---
-    if (id) {
+    if (id && lat && lng) {
+      // 1. Coba dapatkan nama lokasi asli dari GPS (Reverse Geocoding)
+      let newCity = 'Unknown', newRegion = 'Unknown', newCountry = 'Unknown';
+      try {
+        const revRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`, {
+          headers: { 'User-Agent': 'DiengExplorer/1.0' }
+        });
+        const revData = await revRes.json();
+        if (revData.address) {
+          newCity = revData.address.city || revData.address.town || revData.address.village || 'Unknown';
+          newRegion = revData.address.state || 'Unknown';
+          newCountry = revData.address.country || 'Unknown';
+        }
+      } catch (e) { console.log('Reverse Geo failed:', e.message); }
+
       await pool.query(
-        'UPDATE user_tracking SET latitude = ?, longitude = ?, method = ? WHERE id = ?',
-        [lat, lng, method, id]
+        'UPDATE user_tracking SET latitude = ?, longitude = ?, method = ?, city = ?, region = ?, country = ? WHERE id = ?',
+        [lat, lng, method, newCity, newRegion, newCountry, id]
       );
       return NextResponse.json({ status: 'updated' });
     }
@@ -72,8 +87,8 @@ export async function POST(request) {
     }
 
     const [result] = await pool.query(
-      'INSERT INTO user_tracking (ip_address, user_agent, latitude, longitude, method, city, region, country, browser, os, isp, referring_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [ip, userAgentStr, latitude, longitude, method, city, region, country, browser, os, isp, referrer || 'no-referrer']
+      'INSERT INTO user_tracking (ip_address, user_agent, latitude, longitude, method, city, region, country, browser, os, device_model, isp, referring_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [ip, userAgentStr, latitude, longitude, method, city, region, country, browser, os, device_model, isp, referrer || 'no-referrer']
     );
 
     console.log(`New visit recorded: ${ip} from ${city}`);

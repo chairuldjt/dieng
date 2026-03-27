@@ -63,6 +63,7 @@ async function initDB() {
                 country VARCHAR(100),
                 browser VARCHAR(100),
                 os VARCHAR(100),
+                device_model VARCHAR(100),
                 isp VARCHAR(255),
                 referring_url TEXT,
                 last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

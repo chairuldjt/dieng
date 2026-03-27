@@ -8,6 +8,8 @@ export default function AdminPage() {
   const [feedbacks, setFeedbacks] = useState([]);
   const [locations, setLocations] = useState([]);
   const [selectedLog, setSelectedLog] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(new Date());
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
   const markersRef = useRef({});
@@ -52,13 +54,18 @@ export default function AdminPage() {
     const headers = { 'Authorization': `Bearer ${token}` };
 
     try {
+      setIsLoading(true);
       const [fRes, lRes] = await Promise.all([
         fetch('/api/admin/feedback', { headers }),
         fetch('/api/admin/locations', { headers })
       ]);
       setFeedbacks(await fRes.json());
       setLocations(await lRes.json());
-    } catch (e) {}
+      setLastUpdated(new Date());
+    } catch (e) {
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -109,7 +116,7 @@ export default function AdminPage() {
               iconSize: [12, 12]
             });
             const marker = L.marker([loc.latitude, loc.longitude], { icon }).addTo(mapInstance.current)
-              .bindPopup(`<b>${loc.city || 'Visitor'}</b><br>Status: ${online ? 'Online' : 'Offline'}<br>Method: ${loc.method}`);
+              .bindPopup(`<b>${loc.device_model || 'Visitor'}</b><br>Status: ${online ? 'Online' : 'Offline'}<br>Region: ${loc.city}<br>Method: ${loc.method}`);
             markersRef.current[loc.id] = marker;
           }
         });
@@ -164,7 +171,15 @@ export default function AdminPage() {
         <main style={{ paddingBottom: '5rem' }}>
           {activeTab === 'dashboard' && (
             <div className="glass animate-up" style={{ padding: '3rem' }}>
-              <h1 className="gradient-text" style={{ fontSize: '2.5rem' }}>Control Center</h1>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                <h1 className="gradient-text" style={{ fontSize: '2.5rem', margin: 0 }}>Control Center</h1>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                   <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Updated: {lastUpdated.toLocaleTimeString()}</span>
+                   <button onClick={fetchData} disabled={isLoading} style={{ background: 'rgba(59, 130, 246, 0.2)', color: 'var(--primary)', border: '1px solid var(--primary)', padding: '0.6rem 1rem', borderRadius: '0.5rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                     <i className={`fas fa-sync-alt ${isLoading ? 'fa-spin' : ''}`}></i> Refresh
+                   </button>
+                </div>
+              </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', marginTop: '3rem' }}>
                 <div className="glass" style={{ padding: '2rem', textAlign: 'center' }}>
                   <h4 style={{ color: 'var(--text-muted)' }}>Online Sekarang</h4>
@@ -184,7 +199,12 @@ export default function AdminPage() {
 
           {activeTab === 'feedback' && (
             <div className="glass animate-up" style={{ padding: '2rem' }}>
-              <h2 className="gradient-text" style={{ marginBottom: '2rem' }}>Daftar Pesan Masuk</h2>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                <h2 className="gradient-text" style={{ margin: 0 }}>Daftar Pesan Masuk</h2>
+                <button onClick={fetchData} disabled={isLoading} style={{ background: 'transparent', color: 'var(--primary)', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}>
+                   <i className={`fas fa-sync-alt ${isLoading ? 'fa-spin' : ''}`}></i>
+                </button>
+              </div>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ textAlign: 'left', color: 'var(--primary)' }}>
@@ -210,7 +230,12 @@ export default function AdminPage() {
 
           {activeTab === 'logs' && (
             <div className="glass animate-up" style={{ padding: '2rem' }}>
-              <h2 className="gradient-text" style={{ marginBottom: '2rem' }}>Advanced Log Pengunjung</h2>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                <h2 className="gradient-text" style={{ margin: 0 }}>Advanced Log Pengunjung</h2>
+                <button onClick={fetchData} disabled={isLoading} style={{ background: 'transparent', color: 'var(--primary)', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}>
+                   <i className={`fas fa-sync-alt ${isLoading ? 'fa-spin' : ''}`}></i>
+                </button>
+              </div>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
                 <thead>
                   <tr style={{ textAlign: 'left', color: 'var(--primary)', borderBottom: '2px solid var(--glass-border)' }}>
@@ -256,9 +281,12 @@ export default function AdminPage() {
                   return (
                     <div key={loc.id} onClick={() => focusOnUser(loc)} style={{ padding: '1rem', background: 'rgba(30, 41, 59, 0.6)', borderRadius: '0.8rem', marginBottom: '0.8rem', border: '1px solid var(--glass-border)', cursor: 'pointer', transition: '0.3s hover', scale: '1' }} className="user-item">
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{loc.ip_address}</span>
+                        <span style={{ fontWeight: 600, fontSize: '0.9rem', color: online ? 'var(--primary)' : 'white' }}>
+                          {loc.device_model || 'Unknown Device'}
+                        </span>
                         <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: online ? '#10b981' : '#64748b', boxShadow: online ? '0 0 10px #10b981' : 'none' }}></span>
                       </div>
+                      <div style={{ fontSize: '0.8rem', fontWeight: 500, marginTop: '0.2rem' }}>{loc.ip_address}</div>
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>{loc.city}, {loc.country}</div>
                       {!online && <div style={{ fontSize: '0.65rem', color: '#64748b', fontStyle: 'italic', marginTop: '0.2rem' }}>Last seen: {new Date(loc.last_activity).toLocaleTimeString()}</div>}
                     </div>
@@ -285,6 +313,8 @@ export default function AdminPage() {
                 { label: 'Country', value: `${selectedLog.city}, ${selectedLog.region}, ${selectedLog.country}` },
                 { label: 'Browser', value: selectedLog.browser },
                 { label: 'Operating System', value: selectedLog.os },
+                { label: 'Device Model', value: selectedLog.device_model || 'Desktop/Unknown' },
+                { label: 'Coordinates', value: `${selectedLog.latitude}, ${selectedLog.longitude}` },
                 { label: 'User Agent', value: selectedLog.user_agent, fullRow: true },
                 { label: 'Referring URL', value: selectedLog.referring_url, fullRow: true },
                 { label: 'ISP', value: selectedLog.isp }
