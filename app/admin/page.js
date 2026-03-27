@@ -31,6 +31,24 @@ export default function AdminPage() {
     return query ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}` : null;
   };
 
+  const detailItems = selectedLog ? [
+    { label: 'Date/Time', value: new Date(selectedLog.created_at).toLocaleString('id-ID') },
+    { label: 'IP Address', value: selectedLog.ip_address },
+    { label: 'City', value: selectedLog.city },
+    { label: 'State/Province', value: selectedLog.state || selectedLog.region },
+    { label: 'District/Kabupaten', value: selectedLog.district },
+    { label: 'Subdistrict/Kelurahan', value: selectedLog.subdistrict },
+    { label: 'Postal Code', value: selectedLog.postal_code },
+    { label: 'Country', value: selectedLog.country },
+    { label: 'Browser', value: selectedLog.browser },
+    { label: 'Operating System', value: selectedLog.os },
+    { label: 'Device Model', value: selectedLog.device_model || 'Desktop/Unknown' },
+    { label: 'Coordinates', value: selectedLog.latitude && selectedLog.longitude ? `${selectedLog.latitude}, ${selectedLog.longitude}` : '-' },
+    { label: 'ISP', value: selectedLog.isp },
+    { label: 'Referring URL', value: selectedLog.referring_url, fullRow: true },
+    { label: 'User Agent', value: selectedLog.user_agent, fullRow: true }
+  ] : [];
+
   // --- Auth Check ---
   useEffect(() => {
     const token = localStorage.getItem('dieng_token');
@@ -294,6 +312,7 @@ export default function AdminPage() {
                 <h3 style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }} className="gradient-text">Pengunjung Aktif</h3>
                 {locations.map(loc => {
                   const online = isOnline(loc.last_activity);
+                  const mapsUrl = getGoogleMapsUrl(loc);
                   return (
                     <div key={loc.id} onClick={() => focusOnUser(loc)} style={{ padding: '1rem', background: 'rgba(30, 41, 59, 0.6)', borderRadius: '0.8rem', marginBottom: '0.8rem', border: '1px solid var(--glass-border)', cursor: 'pointer', transition: '0.3s hover', scale: '1' }} className="user-item">
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -305,6 +324,28 @@ export default function AdminPage() {
                       <div style={{ fontSize: '0.8rem', fontWeight: 500, marginTop: '0.2rem' }}>{loc.ip_address}</div>
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>{formatLocationSummary(loc)}</div>
                       {!online && <div style={{ fontSize: '0.65rem', color: '#64748b', fontStyle: 'italic', marginTop: '0.2rem' }}>Last seen: {new Date(loc.last_activity).toLocaleTimeString()}</div>}
+                      <div style={{ display: 'flex', gap: '0.6rem', marginTop: '0.9rem' }}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedLog(loc);
+                          }}
+                          style={{ flex: 1, background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.35)', color: 'var(--primary)', padding: '0.55rem 0.75rem', borderRadius: '0.55rem', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}
+                        >
+                          Detail
+                        </button>
+                        {mapsUrl && (
+                          <a
+                            href={mapsUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            style={{ flex: 1, textAlign: 'center', background: 'rgba(59, 130, 246, 0.12)', border: '1px solid rgba(59, 130, 246, 0.35)', color: '#93c5fd', padding: '0.55rem 0.75rem', borderRadius: '0.55rem', textDecoration: 'none', fontSize: '0.75rem', fontWeight: 600 }}
+                          >
+                            Google Maps
+                          </a>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
@@ -317,42 +358,41 @@ export default function AdminPage() {
       {/* Advanced Log Modal */}
       {selectedLog && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.85)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 10000, backdropFilter: 'blur(5px)' }}>
-          <div className="glass" style={{ width: '90%', maxWidth: '650px', padding: '0', overflow: 'hidden' }}>
-            <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0 }}>Advanced Log</h3>
-              <button onClick={() => setSelectedLog(null)} style={{ background: 'transparent', color: 'white', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}>&times;</button>
+          <div className="glass" style={{ width: '92%', maxWidth: '760px', maxHeight: '88vh', padding: '0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(15, 23, 42, 0.88)' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.25rem' }}>Detail Pengunjung</h3>
+                <div style={{ marginTop: '0.3rem', fontSize: '0.82rem', color: 'var(--text-muted)' }}>{selectedLog.device_model || 'Unknown Device'} • {formatLocationSummary(selectedLog)}</div>
+              </div>
+              <button onClick={() => setSelectedLog(null)} style={{ background: 'transparent', color: 'white', border: 'none', fontSize: '1.5rem', cursor: 'pointer', lineHeight: 1 }}>&times;</button>
             </div>
-            <div style={{ padding: '2rem' }}>
-              {[
-                { label: 'Date/Time', value: new Date(selectedLog.created_at).toLocaleString('id-ID') },
-                { label: 'IP Address', value: selectedLog.ip_address },
-                { label: 'City', value: selectedLog.city },
-                { label: 'State/Province', value: selectedLog.state || selectedLog.region },
-                { label: 'District/Kabupaten', value: selectedLog.district },
-                { label: 'Subdistrict/Kelurahan', value: selectedLog.subdistrict },
-                { label: 'Postal Code', value: selectedLog.postal_code },
-                { label: 'Country', value: selectedLog.country },
-                { label: 'Browser', value: selectedLog.browser },
-                { label: 'Operating System', value: selectedLog.os },
-                { label: 'Device Model', value: selectedLog.device_model || 'Desktop/Unknown' },
-                { label: 'Coordinates', value: `${selectedLog.latitude}, ${selectedLog.longitude}` },
-                { label: 'User Agent', value: selectedLog.user_agent, fullRow: true },
-                { label: 'Referring URL', value: selectedLog.referring_url, fullRow: true },
-                { label: 'ISP', value: selectedLog.isp }
-              ].map((item, idx) => (
-                <div key={idx} style={{ display: 'grid', gridTemplateColumns: item.fullRow ? '1fr' : '150px 1fr', padding: '0.8rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                  <div style={{ color: 'var(--text-muted)', fontWeight: 600 }}>{item.label}</div>
-                  <div style={{ color: 'white', wordBreak: 'break-all' }}>{item.value || '-'}</div>
+            <div style={{ padding: '1.5rem', overflowY: 'auto' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.85rem', marginBottom: '1rem' }}>
+                <div className="glass" style={{ padding: '1rem 1.1rem', background: 'rgba(16, 185, 129, 0.08)' }}>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.78rem', marginBottom: '0.4rem' }}>Lokasi Ringkas</div>
+                  <div style={{ fontWeight: 700, lineHeight: 1.5 }}>{formatLocationSummary(selectedLog)}</div>
                 </div>
-              ))}
+                <div className="glass" style={{ padding: '1rem 1.1rem', background: 'rgba(59, 130, 246, 0.08)' }}>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.78rem', marginBottom: '0.4rem' }}>Koordinat</div>
+                  <div style={{ fontWeight: 700, lineHeight: 1.5 }}>{selectedLog.latitude && selectedLog.longitude ? `${selectedLog.latitude}, ${selectedLog.longitude}` : '-'}</div>
+                </div>
+              </div>
+              <div style={{ display: 'grid', gap: '0.75rem' }}>
+                {detailItems.map((item, idx) => (
+                  <div key={idx} className="glass" style={{ padding: '0.95rem 1rem', background: item.fullRow ? 'rgba(15, 23, 42, 0.5)' : 'rgba(255,255,255,0.02)' }}>
+                    <div style={{ color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.8rem', marginBottom: '0.45rem' }}>{item.label}</div>
+                    <div style={{ color: 'white', wordBreak: 'break-word', lineHeight: 1.6 }}>{item.value || '-'}</div>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div style={{ padding: '1.5rem', background: 'rgba(255,255,255,0.02)', textAlign: 'right', display: 'flex', justifyContent: 'flex-end', gap: '0.8rem' }}>
+            <div style={{ padding: '1rem 1.5rem', background: 'rgba(255,255,255,0.03)', display: 'flex', justifyContent: 'flex-end', gap: '0.8rem', borderTop: '1px solid rgba(255,255,255,0.05)', flexWrap: 'wrap' }}>
               {getGoogleMapsUrl(selectedLog) && (
                 <a
                   href={getGoogleMapsUrl(selectedLog)}
                   target="_blank"
                   rel="noreferrer"
-                  style={{ padding: '0.6rem 1.2rem', borderRadius: '0.6rem', border: '1px solid var(--primary)', color: 'var(--primary)', textDecoration: 'none', fontWeight: 600 }}
+                  style={{ padding: '0.7rem 1.2rem', borderRadius: '0.6rem', border: '1px solid rgba(59, 130, 246, 0.35)', color: '#93c5fd', background: 'rgba(59, 130, 246, 0.12)', textDecoration: 'none', fontWeight: 600 }}
                 >
                   Buka di Google Maps
                 </a>
