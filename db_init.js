@@ -2,7 +2,24 @@ const mysql = require('mysql2/promise');
 require('dotenv').config();
 const bcrypt = require('bcryptjs');
 
+async function ensureColumn(connection, databaseName, tableName, columnName, definition) {
+    const [rows] = await connection.query(
+        `
+        SELECT COLUMN_NAME
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?
+        `,
+        [databaseName, tableName, columnName]
+    );
+
+    if (rows.length === 0) {
+        await connection.query(`ALTER TABLE \`${tableName}\` ADD COLUMN \`${columnName}\` ${definition}`);
+        console.log(`Kolom ${tableName}.${columnName} ditambahkan.`);
+    }
+}
+
 async function initDB() {
+    const databaseName = process.env.DB_NAME || 'dieng_db';
     const config = {
         host: process.env.DB_HOST || 'localhost',
         user: process.env.DB_USER || 'chairul',
@@ -13,10 +30,10 @@ async function initDB() {
         const connection = await mysql.createConnection(config);
         console.log('Menghubungkan ke MySQL...');
 
-        await connection.query(`CREATE DATABASE IF NOT EXISTS dieng_db`);
-        console.log('Database dieng_db siap.');
+        await connection.query(`CREATE DATABASE IF NOT EXISTS \`${databaseName}\``);
+        console.log(`Database ${databaseName} siap.`);
 
-        await connection.query(`USE dieng_db`);
+        await connection.query(`USE \`${databaseName}\``);
 
         // Tabel Destinasi
         await connection.query(`
@@ -70,6 +87,22 @@ async function initDB() {
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
+
+        await ensureColumn(connection, databaseName, 'user_tracking', 'ip_address', 'VARCHAR(45)');
+        await ensureColumn(connection, databaseName, 'user_tracking', 'user_agent', 'TEXT');
+        await ensureColumn(connection, databaseName, 'user_tracking', 'latitude', 'DECIMAL(10, 8)');
+        await ensureColumn(connection, databaseName, 'user_tracking', 'longitude', 'DECIMAL(11, 8)');
+        await ensureColumn(connection, databaseName, 'user_tracking', 'method', "ENUM('GPS', 'IP')");
+        await ensureColumn(connection, databaseName, 'user_tracking', 'city', 'VARCHAR(100)');
+        await ensureColumn(connection, databaseName, 'user_tracking', 'region', 'VARCHAR(100)');
+        await ensureColumn(connection, databaseName, 'user_tracking', 'country', 'VARCHAR(100)');
+        await ensureColumn(connection, databaseName, 'user_tracking', 'browser', 'VARCHAR(100)');
+        await ensureColumn(connection, databaseName, 'user_tracking', 'os', 'VARCHAR(100)');
+        await ensureColumn(connection, databaseName, 'user_tracking', 'device_model', 'VARCHAR(100)');
+        await ensureColumn(connection, databaseName, 'user_tracking', 'isp', 'VARCHAR(255)');
+        await ensureColumn(connection, databaseName, 'user_tracking', 'referring_url', 'TEXT');
+        await ensureColumn(connection, databaseName, 'user_tracking', 'last_activity', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+        await ensureColumn(connection, databaseName, 'user_tracking', 'created_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP');
 
         // Insert Default Admin
         const [rows] = await connection.query('SELECT * FROM admin_users WHERE username = ?', ['chairul']);
