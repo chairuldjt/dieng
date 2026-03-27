@@ -29,6 +29,7 @@ export default function TrackingScript() {
 
     async function sendToAPI(data) {
       try {
+        console.log('Sending tracking data:', data);
         const res = await fetch('/api/tracking', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -40,12 +41,13 @@ export default function TrackingScript() {
           startHeartbeat();
         }
       } catch (err) {
-        console.error('Tracking sync error');
+        console.error('Tracking API error:', err);
       }
     }
 
     function startHeartbeat() {
-      setInterval(async () => {
+      if (typeof window === 'undefined') return;
+      const hbInterval = setInterval(async () => {
         if (trackingIdRef.current) {
           await fetch('/api/tracking/ping', {
             method: 'POST',
@@ -54,9 +56,36 @@ export default function TrackingScript() {
           });
         }
       }, 30000); // 30 seconds
+      return hbInterval;
     }
 
+    // Mendengarkan trigger manual dari tombol Hero
+    const handleManualTrigger = () => {
+      console.log('Manual GPS trigger received');
+      if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          async (position) => {
+            sendToAPI({
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+              method: 'GPS',
+              id: trackingIdRef.current
+            });
+          },
+          (err) => console.log('GPS Manual Error:', err.message),
+          { timeout: 10000, enableHighAccuracy: true }
+        );
+      }
+    };
+
+    const hb = startHeartbeat();
+    window.addEventListener('trigger-gps', handleManualTrigger);
     startTracking();
+
+    return () => {
+      clearInterval(hb);
+      window.removeEventListener('trigger-gps', handleManualTrigger);
+    };
   }, []);
 
   return null;

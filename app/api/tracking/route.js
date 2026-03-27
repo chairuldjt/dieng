@@ -43,17 +43,31 @@ export async function POST(request) {
             country = 'Testing Site';
             isp = 'Local Development';
         } else {
+            console.log(`Fetching GeoIP for: ${ip}`);
             const ipRes = await fetch(`https://ipapi.co/${ip}/json/`);
             const ipData = await ipRes.json();
-            city = ipData.city || 'Unknown';
-            region = ipData.region || 'Unknown';
-            country = ipData.country_name || 'Unknown';
-            isp = ipData.org || 'Unknown';
-            if (!latitude) latitude = ipData.latitude;
-            if (!longitude) longitude = ipData.longitude;
+            
+            if (ipData.error || !ipData.city) {
+              console.log('ipapi.co failed, trying ip-api.com fallback...');
+              const fallRes = await fetch(`http://ip-api.com/json/${ip}`);
+              const fallData = await fallRes.json();
+              city = fallData.city || 'Unknown';
+              region = fallData.regionName || 'Unknown';
+              country = fallData.country || 'Unknown';
+              isp = fallData.isp || 'Unknown';
+              latitude = fallData.lat;
+              longitude = fallData.lon;
+            } else {
+              city = ipData.city || 'Unknown';
+              region = ipData.region || 'Unknown';
+              country = ipData.country_name || 'Unknown';
+              isp = ipData.org || 'Unknown';
+              if (!latitude) latitude = ipData.latitude;
+              if (!longitude) longitude = ipData.longitude;
+            }
         }
     } catch (e) {
-        console.error('IP Geolocation failed:', e.message);
+        console.error('IP Geolocation all failed:', e.message);
     }
 
     const [result] = await pool.query(

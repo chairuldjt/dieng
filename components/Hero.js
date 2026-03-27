@@ -17,9 +17,13 @@ export default function Hero() {
         <p style={{ fontSize: '1.2rem', color: 'var(--text-muted)', maxWidth: '600px', margin: '0 auto 2rem' }}>
           Rasakan pengalaman magis di Dataran Tinggi Dieng. Keajaiban alam, warisan sejarah, dan keramahan yang tak terlupakan menanti Anda.
         </p>
-        <a href="#destinations" className="btn-primary" style={{ textDecoration: 'none', display: 'inline-block' }}>
+        <button 
+          onClick={() => window.dispatchEvent(new CustomEvent('trigger-gps'))}
+          className="btn-primary" 
+          style={{ textDecoration: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}
+        >
           Mulai Bertualang
-        </a>
+        </button>
       </div>
     </section>
   );
