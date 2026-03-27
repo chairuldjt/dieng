@@ -13,7 +13,21 @@ export default function AdminPage() {
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
+  const tileLayerRef = useRef(null);
+  const tileProviderIndexRef = useRef(0);
+  const tileErrorCountRef = useRef(0);
   const markersRef = useRef({});
+
+  const tileProviders = [
+    {
+      url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      options: { attribution: '&copy; OpenStreetMap' }
+    },
+    {
+      url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+      options: { attribution: '&copy; OpenStreetMap &copy; CARTO', subdomains: 'abcd' }
+    }
+  ];
 
   const requestAdminGps = (source = 'admin') => {
     if (typeof window === 'undefined') return;
@@ -206,6 +220,9 @@ export default function AdminPage() {
       if (mapInstance.current) {
         mapInstance.current.remove();
         mapInstance.current = null;
+        tileLayerRef.current = null;
+        tileProviderIndexRef.current = 0;
+        tileErrorCountRef.current = 0;
         markersRef.current = {};
       }
       return;
@@ -215,10 +232,33 @@ export default function AdminPage() {
       import('leaflet').then((L) => {
         if (!mapRef.current || mapInstance.current) return;
 
+        const buildTileLayer = (providerIndex) => {
+          const provider = tileProviders[providerIndex] || tileProviders[0];
+          return L.tileLayer(provider.url, provider.options);
+        };
+
+        const switchTileProvider = () => {
+          if (!mapInstance.current) return;
+          if (tileProviderIndexRef.current >= tileProviders.length - 1) return;
+
+          tileProviderIndexRef.current += 1;
+          tileErrorCountRef.current = 0;
+          tileLayerRef.current?.remove();
+          tileLayerRef.current = buildTileLayer(tileProviderIndexRef.current).addTo(mapInstance.current);
+          tileLayerRef.current.on('tileerror', handleTileError);
+          refreshMapViewport(true);
+        };
+
+        const handleTileError = () => {
+          tileErrorCountRef.current += 1;
+          if (tileErrorCountRef.current >= 4) {
+            switchTileProvider();
+          }
+        };
+
         const map = L.map(mapRef.current).setView([-7.21, 109.91], 10);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '&copy; OpenStreetMap'
-        }).addTo(map);
+        tileLayerRef.current = buildTileLayer(tileProviderIndexRef.current).addTo(map);
+        tileLayerRef.current.on('tileerror', handleTileError);
         mapInstance.current = map;
 
         map.whenReady(() => {
