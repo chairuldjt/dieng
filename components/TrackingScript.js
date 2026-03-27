@@ -3,6 +3,8 @@ import { useEffect, useRef } from 'react';
 
 export default function TrackingScript() {
   const trackingIdRef = useRef(null);
+  const heartbeatRef = useRef(null);
+  const deviceMetadataRef = useRef({});
 
   useEffect(() => {
     async function getDeviceMetadata() {
@@ -23,38 +25,70 @@ export default function TrackingScript() {
       }
     }
 
+    async function sendHeartbeat() {
+      if (!trackingIdRef.current) return;
+
+      try {
+        await fetch('/api/tracking/ping', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: trackingIdRef.current })
+        });
+      } catch (err) {
+        console.error('Tracking heartbeat error:', err);
+      }
+    }
+
+    function startHeartbeat() {
+      if (typeof window === 'undefined' || heartbeatRef.current) return;
+
+      heartbeatRef.current = setInterval(() => {
+        sendHeartbeat();
+      }, 15000);
+    }
+
+    function stopHeartbeat() {
+      if (heartbeatRef.current) {
+        clearInterval(heartbeatRef.current);
+        heartbeatRef.current = null;
+      }
+    }
+
+    async function sendGpsUpdate(options = {}) {
+      if (!('geolocation' in navigator)) return;
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          sendToAPI({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+            method: 'GPS',
+            id: trackingIdRef.current,
+            ...deviceMetadataRef.current,
+            ...options
+          });
+        },
+        null,
+        { timeout: 8000, enableHighAccuracy: true }
+      );
+    }
+
     async function startTracking() {
-      const deviceMetadata = await getDeviceMetadata();
+      deviceMetadataRef.current = await getDeviceMetadata();
 
       // 1. Kirim data awal sesegera mungkin (Server-side IP lookup)
       await sendToAPI({
         method: 'IP',
         referrer: typeof document !== 'undefined' ? document.referrer : '',
-        ...deviceMetadata
+        ...deviceMetadataRef.current
       });
 
       // 2. Berusaha dapatkan GPS sebagai bonus lokasi presisi
-      if ("geolocation" in navigator) {
-        navigator.geolocation.getCurrentPosition(
-          async (position) => {
-            const gpsData = {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
-              method: 'GPS',
-              id: trackingIdRef.current, // Update baris yang sama di DB
-              ...deviceMetadata
-            };
-            sendToAPI(gpsData);
-          },
-          null, // Abaikan error jika GPS ditolak
-          { timeout: 5000 }
-        );
-      }
+      await sendGpsUpdate();
     }
 
     async function sendToAPI(data) {
       try {
-        console.log('Sending tracking data:', data);
         const res = await fetch('/api/tracking', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -64,54 +98,38 @@ export default function TrackingScript() {
         if (result.id) {
           trackingIdRef.current = result.id;
           startHeartbeat();
+          sendHeartbeat();
         }
       } catch (err) {
         console.error('Tracking API error:', err);
       }
     }
 
-    function startHeartbeat() {
-      if (typeof window === 'undefined') return;
-      const hbInterval = setInterval(async () => {
-        if (trackingIdRef.current) {
-          await fetch('/api/tracking/ping', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: trackingIdRef.current })
-          });
-        }
-      }, 30000); // 30 seconds
-      return hbInterval;
-    }
-
     // Mendengarkan trigger manual dari tombol Hero
     const handleManualTrigger = () => {
-      console.log('Manual GPS trigger received');
-      if ("geolocation" in navigator) {
-        navigator.geolocation.getCurrentPosition(
-          async (position) => {
-            const deviceMetadata = await getDeviceMetadata();
-            sendToAPI({
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
-              method: 'GPS',
-              id: trackingIdRef.current,
-              ...deviceMetadata
-            });
-          },
-          (err) => console.log('GPS Manual Error:', err.message),
-          { timeout: 10000, enableHighAccuracy: true }
-        );
+      sendGpsUpdate();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        sendHeartbeat();
       }
     };
 
-    const hb = startHeartbeat();
+    const handleWindowFocus = () => {
+      sendHeartbeat();
+    };
+
     window.addEventListener('trigger-gps', handleManualTrigger);
+    window.addEventListener('focus', handleWindowFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     startTracking();
 
     return () => {
-      clearInterval(hb);
+      stopHeartbeat();
       window.removeEventListener('trigger-gps', handleManualTrigger);
+      window.removeEventListener('focus', handleWindowFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
 

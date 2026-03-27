@@ -104,8 +104,24 @@ export default function AdminPage() {
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 10000); // Polling every 10s
-    return () => clearInterval(interval);
+    if (!isLoggedIn) return;
+
+    const handleWindowFocus = () => fetchData();
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchData();
+      }
+    };
+
+    const interval = setInterval(fetchData, 5000);
+    window.addEventListener('focus', handleWindowFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleWindowFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [isLoggedIn]);
 
   // --- Helper: Check Online Status ---
@@ -127,17 +143,44 @@ export default function AdminPage() {
 
   // --- Leaflet Init ---
   useEffect(() => {
-    if (isLoggedIn && activeTab === 'maps' && mapRef.current && !mapInstance.current) {
+    if (!isLoggedIn) return;
+
+    if (activeTab !== 'maps') {
+      if (mapInstance.current) {
+        mapInstance.current.remove();
+        mapInstance.current = null;
+        markersRef.current = {};
+      }
+      return;
+    }
+
+    if (mapRef.current && !mapInstance.current) {
       import('leaflet').then((L) => {
+        if (!mapRef.current || mapInstance.current) return;
+
         const map = L.map(mapRef.current).setView([-7.21, 109.91], 10);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '&copy; OpenStreetMap'
         }).addTo(map);
         mapInstance.current = map;
+
+        setTimeout(() => {
+          map.invalidateSize();
+        }, 0);
       });
     }
+  }, [isLoggedIn, activeTab]);
 
-    if (mapInstance.current && locations.length > 0) {
+  useEffect(() => {
+    if (activeTab === 'maps' && mapInstance.current) {
+      setTimeout(() => {
+        mapInstance.current?.invalidateSize();
+      }, 0);
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'maps' && mapInstance.current && locations.length > 0) {
       import('leaflet').then((L) => {
         // Clear old markers if needed (simplified here for speed)
         locations.forEach(loc => {
@@ -156,7 +199,7 @@ export default function AdminPage() {
         });
       });
     }
-  }, [isLoggedIn, activeTab, locations]);
+  }, [activeTab, locations]);
 
   if (!isLoggedIn) {
     return (
