@@ -1,4 +1,5 @@
 import './globals.css';
+import TrackingScript from '@/components/TrackingScript';
 
 export const metadata = {
   title: 'Pesona Dieng - Negeri di Atas Awan',
@@ -10,6 +11,7 @@ export default function RootLayout({ children }) {
     <html lang="id">
       <body>
         {children}
+        <TrackingScript />
       </body>
     </html>
   );

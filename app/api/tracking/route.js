@@ -8,7 +8,13 @@ export async function POST(request) {
     const body = await request.json();
     const { id, lat, lng, method, referrer } = body;
     const headersList = await headers();
-    const ip = headersList.get('x-forwarded-for') || '127.0.0.1';
+    let ip = headersList.get('x-forwarded-for') || headersList.get('cf-connecting-ip') || '127.0.0.1';
+    
+    // Jika ada banyak IP (proxy), ambil yang pertama
+    if (ip.includes(',')) {
+      ip = ip.split(',')[0].trim();
+    }
+    
     const userAgentStr = headersList.get('user-agent') || 'Unknown';
 
     // Parse User Agent

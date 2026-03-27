@@ -13,11 +13,15 @@ git pull origin master
 echo "📦 Menginstal dependensi baru..."
 npm install
 
-# 3. Build ulang proyek Next.js
+# 3. Inisialisasi Database
+echo "🗄️  Migrasi/Inisialisasi Database..."
+npm run db:init
+
+# 4. Build ulang proyek Next.js
 echo "🏗️  Membangun ulang (Building) aplikasi..."
 npm run build
 
-# 4. Restart server menggunakan PM2
+# 5. Restart server menggunakan PM2
 echo "♻️  Me-restart aplikasi menggunakan PM2..."
 pm2 restart dieng || pm2 start npm --name "dieng" -- start -- -p 3010
 

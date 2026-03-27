@@ -49,8 +49,7 @@ async function initDB() {
             )
         `);
 
-        // Tabel Tracking (Hapus lama agar skema baru masuk)
-        await connection.query(`DROP TABLE IF EXISTS user_tracking`);
+        // Tabel Tracking
         await connection.query(`
             CREATE TABLE IF NOT EXISTS user_tracking (
                 id INT AUTO_INCREMENT PRIMARY KEY,

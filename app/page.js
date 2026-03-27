@@ -2,7 +2,6 @@ import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
 import DestinationGrid from '@/components/DestinationGrid';
 import ContactForm from '@/components/ContactForm';
-import TrackingScript from '@/components/TrackingScript';
 
 export default function Home() {
   return (
@@ -16,7 +15,6 @@ export default function Home() {
           <p>&copy; 2024 Dieng Explorer. Dibuat dengan cinta untuk Indonesia dengan Next.js.</p>
         </div>
       </footer>
-      <TrackingScript />
     </main>
   );
 }
