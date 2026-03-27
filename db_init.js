@@ -77,6 +77,10 @@ async function initDB() {
                 method ENUM('GPS', 'IP'),
                 city VARCHAR(100),
                 region VARCHAR(100),
+                state VARCHAR(100),
+                district VARCHAR(100),
+                subdistrict VARCHAR(100),
+                postal_code VARCHAR(20),
                 country VARCHAR(100),
                 browser VARCHAR(100),
                 os VARCHAR(100),
@@ -95,6 +99,10 @@ async function initDB() {
         await ensureColumn(connection, databaseName, 'user_tracking', 'method', "ENUM('GPS', 'IP')");
         await ensureColumn(connection, databaseName, 'user_tracking', 'city', 'VARCHAR(100)');
         await ensureColumn(connection, databaseName, 'user_tracking', 'region', 'VARCHAR(100)');
+        await ensureColumn(connection, databaseName, 'user_tracking', 'state', 'VARCHAR(100)');
+        await ensureColumn(connection, databaseName, 'user_tracking', 'district', 'VARCHAR(100)');
+        await ensureColumn(connection, databaseName, 'user_tracking', 'subdistrict', 'VARCHAR(100)');
+        await ensureColumn(connection, databaseName, 'user_tracking', 'postal_code', 'VARCHAR(20)');
         await ensureColumn(connection, databaseName, 'user_tracking', 'country', 'VARCHAR(100)');
         await ensureColumn(connection, databaseName, 'user_tracking', 'browser', 'VARCHAR(100)');
         await ensureColumn(connection, databaseName, 'user_tracking', 'os', 'VARCHAR(100)');

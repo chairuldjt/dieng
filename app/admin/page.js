@@ -15,6 +15,22 @@ export default function AdminPage() {
   const markersRef = useRef({});
   const router = useRouter();
 
+  const formatLocationSummary = (loc) => {
+    return [loc.city, loc.state || loc.region, loc.country].filter(Boolean).join(', ');
+  };
+
+  const getGoogleMapsUrl = (loc) => {
+    if (loc.latitude && loc.longitude) {
+      return `https://www.google.com/maps?q=${loc.latitude},${loc.longitude}`;
+    }
+
+    const query = [loc.subdistrict, loc.district, loc.city, loc.state || loc.region, loc.country]
+      .filter(Boolean)
+      .join(', ');
+
+    return query ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}` : null;
+  };
+
   // --- Auth Check ---
   useEffect(() => {
     const token = localStorage.getItem('dieng_token');
@@ -116,7 +132,7 @@ export default function AdminPage() {
               iconSize: [12, 12]
             });
             const marker = L.marker([loc.latitude, loc.longitude], { icon }).addTo(mapInstance.current)
-              .bindPopup(`<b>${loc.device_model || 'Visitor'}</b><br>Status: ${online ? 'Online' : 'Offline'}<br>Region: ${loc.city}<br>Method: ${loc.method}`);
+              .bindPopup(`<b>${loc.device_model || 'Visitor'}</b><br>Status: ${online ? 'Online' : 'Offline'}<br>Lokasi: ${formatLocationSummary(loc) || 'Unknown'}<br>Method: ${loc.method}`);
             markersRef.current[loc.id] = marker;
           }
         });
@@ -254,7 +270,7 @@ export default function AdminPage() {
                         <div>{loc.ip_address}</div>
                         <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{loc.isp}</div>
                       </td>
-                      <td style={{ padding: '1rem' }}>{loc.city}, {loc.country}</td>
+                      <td style={{ padding: '1rem' }}>{formatLocationSummary(loc)}</td>
                       <td style={{ padding: '1rem' }}>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', color: isOnline(loc.last_activity) ? '#10b981' : 'var(--text-muted)' }}>
                           <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: isOnline(loc.last_activity) ? '#10b981' : '#64748b' }}></span>
@@ -287,7 +303,7 @@ export default function AdminPage() {
                         <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: online ? '#10b981' : '#64748b', boxShadow: online ? '0 0 10px #10b981' : 'none' }}></span>
                       </div>
                       <div style={{ fontSize: '0.8rem', fontWeight: 500, marginTop: '0.2rem' }}>{loc.ip_address}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>{loc.city}, {loc.country}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>{formatLocationSummary(loc)}</div>
                       {!online && <div style={{ fontSize: '0.65rem', color: '#64748b', fontStyle: 'italic', marginTop: '0.2rem' }}>Last seen: {new Date(loc.last_activity).toLocaleTimeString()}</div>}
                     </div>
                   );
@@ -310,7 +326,12 @@ export default function AdminPage() {
               {[
                 { label: 'Date/Time', value: new Date(selectedLog.created_at).toLocaleString('id-ID') },
                 { label: 'IP Address', value: selectedLog.ip_address },
-                { label: 'Country', value: `${selectedLog.city}, ${selectedLog.region}, ${selectedLog.country}` },
+                { label: 'City', value: selectedLog.city },
+                { label: 'State/Province', value: selectedLog.state || selectedLog.region },
+                { label: 'District/Kabupaten', value: selectedLog.district },
+                { label: 'Subdistrict/Kelurahan', value: selectedLog.subdistrict },
+                { label: 'Postal Code', value: selectedLog.postal_code },
+                { label: 'Country', value: selectedLog.country },
                 { label: 'Browser', value: selectedLog.browser },
                 { label: 'Operating System', value: selectedLog.os },
                 { label: 'Device Model', value: selectedLog.device_model || 'Desktop/Unknown' },
@@ -325,7 +346,17 @@ export default function AdminPage() {
                 </div>
               ))}
             </div>
-            <div style={{ padding: '1.5rem', background: 'rgba(255,255,255,0.02)', textAlign: 'right' }}>
+            <div style={{ padding: '1.5rem', background: 'rgba(255,255,255,0.02)', textAlign: 'right', display: 'flex', justifyContent: 'flex-end', gap: '0.8rem' }}>
+              {getGoogleMapsUrl(selectedLog) && (
+                <a
+                  href={getGoogleMapsUrl(selectedLog)}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ padding: '0.6rem 1.2rem', borderRadius: '0.6rem', border: '1px solid var(--primary)', color: 'var(--primary)', textDecoration: 'none', fontWeight: 600 }}
+                >
+                  Buka di Google Maps
+                </a>
+              )}
               <button onClick={() => setSelectedLog(null)} className="btn-primary" style={{ padding: '0.6rem 2rem' }}>Close</button>
             </div>
           </div>

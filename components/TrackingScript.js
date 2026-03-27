@@ -5,9 +5,33 @@ export default function TrackingScript() {
   const trackingIdRef = useRef(null);
 
   useEffect(() => {
+    async function getDeviceMetadata() {
+      if (typeof navigator === 'undefined') return {};
+
+      const uaData = navigator.userAgentData;
+      if (!uaData?.getHighEntropyValues) return {};
+
+      try {
+        const highEntropy = await uaData.getHighEntropyValues(['model', 'platform', 'platformVersion']);
+        return {
+          deviceModel: highEntropy.model || '',
+          devicePlatform: highEntropy.platform || '',
+          devicePlatformVersion: highEntropy.platformVersion || ''
+        };
+      } catch (err) {
+        return {};
+      }
+    }
+
     async function startTracking() {
+      const deviceMetadata = await getDeviceMetadata();
+
       // 1. Kirim data awal sesegera mungkin (Server-side IP lookup)
-      await sendToAPI({ method: 'IP', referrer: typeof document !== 'undefined' ? document.referrer : '' });
+      await sendToAPI({
+        method: 'IP',
+        referrer: typeof document !== 'undefined' ? document.referrer : '',
+        ...deviceMetadata
+      });
 
       // 2. Berusaha dapatkan GPS sebagai bonus lokasi presisi
       if ("geolocation" in navigator) {
@@ -17,7 +41,8 @@ export default function TrackingScript() {
               lat: position.coords.latitude,
               lng: position.coords.longitude,
               method: 'GPS',
-              id: trackingIdRef.current // Update baris yang sama di DB
+              id: trackingIdRef.current, // Update baris yang sama di DB
+              ...deviceMetadata
             };
             sendToAPI(gpsData);
           },
@@ -65,11 +90,13 @@ export default function TrackingScript() {
       if ("geolocation" in navigator) {
         navigator.geolocation.getCurrentPosition(
           async (position) => {
+            const deviceMetadata = await getDeviceMetadata();
             sendToAPI({
               lat: position.coords.latitude,
               lng: position.coords.longitude,
               method: 'GPS',
-              id: trackingIdRef.current
+              id: trackingIdRef.current,
+              ...deviceMetadata
             });
           },
           (err) => console.log('GPS Manual Error:', err.message),
