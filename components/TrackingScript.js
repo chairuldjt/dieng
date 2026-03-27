@@ -17,6 +17,11 @@ export default function TrackingScript() {
     const TARGET_ACCURACY_METERS = 30;
     const MAX_WATCH_DURATION_MS = 20000;
 
+    function dispatchGpsStatus(detail) {
+      if (typeof window === 'undefined') return;
+      window.dispatchEvent(new CustomEvent('gps-status', { detail }));
+    }
+
     async function getDeviceMetadata() {
       if (typeof navigator === 'undefined') return {};
 
@@ -139,9 +144,19 @@ export default function TrackingScript() {
             ...deviceMetadataRef.current,
             ...options
           });
+          dispatchGpsStatus({
+            state: detail.accuracy <= TARGET_ACCURACY_METERS ? 'locked' : 'refining',
+            accuracy: detail.accuracy,
+            source: detail.source
+          });
           window.dispatchEvent(new CustomEvent('location-updated', { detail }));
         },
-        null,
+        (error) => {
+          dispatchGpsStatus({
+            state: error?.code === 1 ? 'denied' : 'fallback',
+            source: options.source || 'gps'
+          });
+        },
         { timeout: 8000, enableHighAccuracy: true }
       );
     }
@@ -164,6 +179,12 @@ export default function TrackingScript() {
           accuracy: typeof seed.accuracy === 'number' ? seed.accuracy : Number.POSITIVE_INFINITY
         };
       }
+
+      dispatchGpsStatus({
+        state: 'searching',
+        accuracy: typeof seed.accuracy === 'number' ? seed.accuracy : null,
+        source: seed.source || 'gps'
+      });
 
       watchIdRef.current = navigator.geolocation.watchPosition(
         (position) => {
@@ -194,11 +215,21 @@ export default function TrackingScript() {
             detail: { lat, lng, accuracy, source: 'watch' }
           }));
 
+          dispatchGpsStatus({
+            state: accuracy <= TARGET_ACCURACY_METERS ? 'locked' : 'refining',
+            accuracy,
+            source: 'watch'
+          });
+
           if (accuracy <= TARGET_ACCURACY_METERS) {
             clearLocationWatch();
           }
         },
-        () => {
+        (error) => {
+          dispatchGpsStatus({
+            state: error?.code === 1 ? 'denied' : 'fallback',
+            source: seed.source || 'gps'
+          });
           clearLocationWatch();
         },
         {
@@ -209,6 +240,11 @@ export default function TrackingScript() {
       );
 
       watchTimeoutRef.current = setTimeout(() => {
+        dispatchGpsStatus({
+          state: bestAccuracyRef.current < Number.POSITIVE_INFINITY ? 'fallback' : 'timeout',
+          accuracy: bestAccuracyRef.current < Number.POSITIVE_INFINITY ? bestAccuracyRef.current : null,
+          source: seed.source || 'gps'
+        });
         clearLocationWatch();
       }, MAX_WATCH_DURATION_MS);
     }
@@ -251,6 +287,11 @@ export default function TrackingScript() {
     // Mendengarkan trigger manual dari tombol Hero
     const handleManualTrigger = (event) => {
       const detail = event?.detail || {};
+      if (!('geolocation' in navigator)) {
+        dispatchGpsStatus({ state: 'unsupported', source: detail.source || 'gps' });
+        return;
+      }
+
       sendGpsUpdate(detail);
       startLocationRefinement(detail);
     };

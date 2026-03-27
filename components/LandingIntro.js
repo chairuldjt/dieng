@@ -22,6 +22,19 @@ export default function LandingIntro() {
     return () => clearTimeout(timeout);
   }, [toastMessage]);
 
+  useEffect(() => {
+    const handleGpsStatus = (event) => {
+      const { state } = event.detail || {};
+
+      if (state === 'denied' || state === 'unsupported') {
+        setToastMessage('Akses lokasi perlu diizinkan agar simulasi biaya perjalanan bisa dihitung.');
+      }
+    };
+
+    window.addEventListener('gps-status', handleGpsStatus);
+    return () => window.removeEventListener('gps-status', handleGpsStatus);
+  }, []);
+
   const closeIntroWithToast = (message) => {
     setToastMessage(message);
     setIsOpen(false);
@@ -35,28 +48,11 @@ export default function LandingIntro() {
 
     setToastMessage('');
     setIsOpen(false);
+    window.dispatchEvent(new CustomEvent('trigger-gps', { detail: { source: 'entrance' } }));
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const detail = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-          accuracy: position.coords.accuracy,
-          source: 'entrance'
-        };
-
-        window.dispatchEvent(new CustomEvent('trigger-gps', { detail }));
-        window.dispatchEvent(new CustomEvent('location-updated', { detail }));
-
-        setTimeout(() => {
-          document.getElementById('simulasi-biaya')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 350);
-      },
-      () => {
-        closeIntroWithToast('Akses lokasi perlu diizinkan agar simulasi biaya perjalanan bisa dihitung.');
-      },
-      { timeout: 10000, enableHighAccuracy: true }
-    );
+    setTimeout(() => {
+      document.getElementById('simulasi-biaya')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 350);
   };
 
   return (

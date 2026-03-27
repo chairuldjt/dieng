@@ -78,15 +78,48 @@ export default function CostEstimator() {
       setIsLoading(false);
     };
 
+    const handleGpsStatus = (event) => {
+      const { state, accuracy } = event.detail || {};
+
+      if (state === 'searching') {
+        setIsLoading(true);
+        setStatus('Mencari GPS perangkat dan menyempurnakan titik lokasi Anda...');
+        return;
+      }
+
+      if (state === 'refining') {
+        setIsLoading(true);
+        setStatus(`Lokasi sudah terbaca, sistem sedang meningkatkan akurasi GPS${typeof accuracy === 'number' ? ` (${Math.round(accuracy)} m)` : ''}.`);
+        return;
+      }
+
+      if (state === 'locked') {
+        setIsLoading(false);
+        setStatus(`GPS sudah terkunci${typeof accuracy === 'number' ? ` dengan akurasi sekitar ${Math.round(accuracy)} meter` : ''}. Simulasi biaya kini memakai titik yang lebih presisi.`);
+        return;
+      }
+
+      if (state === 'denied' || state === 'unsupported') {
+        setStatus('Akses lokasi tidak diberikan. Simulasi tetap menampilkan estimasi default berbasis titik keberangkatan umum dari Jawa Tengah.');
+        setIsLoading(false);
+        return;
+      }
+
+      if (state === 'timeout' || state === 'fallback') {
+        setStatus(`GPS belum mendapat titik yang sangat presisi, jadi simulasi memakai lokasi terbaik yang tersedia${typeof accuracy === 'number' ? ` sekitar ${Math.round(accuracy)} meter` : ''}.`);
+        setIsLoading(false);
+      }
+    };
+
     window.addEventListener('location-updated', handleLocationUpdated);
-    return () => window.removeEventListener('location-updated', handleLocationUpdated);
+    window.addEventListener('gps-status', handleGpsStatus);
+    return () => {
+      window.removeEventListener('location-updated', handleLocationUpdated);
+      window.removeEventListener('gps-status', handleGpsStatus);
+    };
   }, []);
 
   const handleEstimate = () => {
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('trigger-gps'));
-    }
-
     if (!navigator.geolocation) {
       setStatus('Browser ini tidak mendukung geolocation, jadi simulasi tetap memakai estimasi default.');
       return;
@@ -94,26 +127,7 @@ export default function CostEstimator() {
 
     setIsLoading(true);
     setStatus('Menghitung simulasi biaya...');
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const detail = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-          accuracy: position.coords.accuracy,
-          source: 'estimator'
-        };
-        window.dispatchEvent(new CustomEvent('trigger-gps', { detail }));
-        window.dispatchEvent(new CustomEvent('location-updated', { detail }));
-        applyEstimateFromCoordinates(detail.lat, detail.lng);
-        setIsLoading(false);
-      },
-      () => {
-        setStatus('Akses lokasi tidak diberikan. Simulasi tetap menampilkan estimasi default berbasis titik keberangkatan umum dari Jawa Tengah.');
-        setIsLoading(false);
-      },
-      { timeout: 10000, enableHighAccuracy: true }
-    );
+    window.dispatchEvent(new CustomEvent('trigger-gps', { detail: { source: 'estimator' } }));
   };
 
   return (
