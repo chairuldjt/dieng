@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 export default function AdminPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [feedbacks, setFeedbacks] = useState([]);
   const [locations, setLocations] = useState([]);
   const [selectedLog, setSelectedLog] = useState(null);
@@ -79,6 +80,11 @@ export default function AdminPage() {
     localStorage.removeItem('dieng_token');
     setIsLoggedIn(false);
     window.location.reload();
+  };
+
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId);
+    setIsMobileSidebarOpen(false);
   };
 
   // --- Data Fetching ---
@@ -226,38 +232,63 @@ export default function AdminPage() {
     <div style={{ background: '#020617', minHeight: '100vh', color: 'white' }}>
       <nav className="glass" style={{ padding: '1rem 0', borderBottom: '1px solid var(--glass-border)' }}>
         <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div className="logo gradient-text" style={{ fontWeight: 800 }}>Admin<span style={{ color: 'white' }}>Panel</span></div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+            <button
+              type="button"
+              className="admin-mobile-menu-btn"
+              onClick={() => setIsMobileSidebarOpen(true)}
+              style={{ display: 'none', width: '42px', height: '42px', borderRadius: '0.8rem', border: '1px solid var(--glass-border)', background: 'rgba(255,255,255,0.04)', color: 'white', cursor: 'pointer' }}
+            >
+              <i className="fas fa-bars"></i>
+            </button>
+            <div className="logo gradient-text" style={{ fontWeight: 800 }}>Admin<span style={{ color: 'white' }}>Panel</span></div>
+          </div>
           <button onClick={handleLogout} style={{ background: 'transparent', color: 'var(--text-muted)', border: 'none', cursor: 'pointer' }}>Logout <i className="fas fa-sign-out-alt"></i></button>
         </div>
       </nav>
 
-      <div className="container" style={{ display: 'grid', gridTemplateColumns: '250px 1fr', gap: '2rem', marginTop: '2rem' }}>
-        <aside>
+      <div
+        className={`admin-sidebar-overlay ${isMobileSidebarOpen ? 'is-open' : ''}`}
+        onClick={() => setIsMobileSidebarOpen(false)}
+      />
+
+      <div className="container admin-layout" style={{ display: 'grid', gridTemplateColumns: '250px 1fr', gap: '2rem', marginTop: '2rem' }}>
+        <aside className={`admin-sidebar ${isMobileSidebarOpen ? 'is-open' : ''}`}>
+          <div className="admin-sidebar-header" style={{ display: 'none', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <div className="gradient-text" style={{ fontWeight: 800 }}>Menu Admin</div>
+            <button
+              type="button"
+              onClick={() => setIsMobileSidebarOpen(false)}
+              style={{ background: 'transparent', color: 'white', border: 'none', fontSize: '1.4rem', cursor: 'pointer' }}
+            >
+              &times;
+            </button>
+          </div>
           {[
             { id: 'dashboard', label: 'Dashboard', icon: 'fa-chart-line' },
             { id: 'feedback', label: 'Pesan Masuk', icon: 'fa-envelope' },
             { id: 'logs', label: 'Log Pengunjung', icon: 'fa-list' },
             { id: 'maps', label: 'Maps Pengunjung', icon: 'fa-map-marked-alt' }
           ].map(tab => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{ width: '100%', textAlign: 'left', padding: '1.2rem', marginBottom: '0.5rem', background: activeTab === tab.id ? 'var(--primary)' : 'rgba(30, 41, 59, 0.4)', color: 'white', border: 'none', borderRadius: '0.8rem', cursor: 'pointer', transition: '0.3s', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <button key={tab.id} className="admin-tab-button" onClick={() => handleTabChange(tab.id)} style={{ width: '100%', textAlign: 'left', padding: '1.2rem', marginBottom: '0.5rem', background: activeTab === tab.id ? 'var(--primary)' : 'rgba(30, 41, 59, 0.4)', color: 'white', border: 'none', borderRadius: '0.8rem', cursor: 'pointer', transition: '0.3s', display: 'flex', alignItems: 'center', gap: '1rem' }}>
               <i className={`fas ${tab.icon}`}></i> {tab.label}
             </button>
           ))}
         </aside>
 
-        <main style={{ paddingBottom: '5rem' }}>
+        <main className="admin-main" style={{ paddingBottom: '5rem' }}>
           {activeTab === 'dashboard' && (
-            <div className="glass animate-up" style={{ padding: '3rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+            <div className="glass animate-up admin-panel" style={{ padding: '3rem' }}>
+              <div className="admin-panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <h1 className="gradient-text" style={{ fontSize: '2.5rem', margin: 0 }}>Control Center</h1>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div className="admin-panel-actions" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Updated: {lastUpdated.toLocaleTimeString()}</span>
                    <button onClick={fetchData} disabled={isLoading} style={{ background: 'rgba(59, 130, 246, 0.2)', color: 'var(--primary)', border: '1px solid var(--primary)', padding: '0.6rem 1rem', borderRadius: '0.5rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                      <i className={`fas fa-sync-alt ${isLoading ? 'fa-spin' : ''}`}></i> Refresh
                    </button>
                 </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', marginTop: '3rem' }}>
+              <div className="admin-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', marginTop: '3rem' }}>
                 <div className="glass" style={{ padding: '2rem', textAlign: 'center' }}>
                   <h4 style={{ color: 'var(--text-muted)' }}>Online Sekarang</h4>
                   <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#10b981' }}>{locations.filter(l => isOnline(l.last_activity)).length}</div>
@@ -275,14 +306,15 @@ export default function AdminPage() {
           )}
 
           {activeTab === 'feedback' && (
-            <div className="glass animate-up" style={{ padding: '2rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+            <div className="glass animate-up admin-panel" style={{ padding: '2rem' }}>
+              <div className="admin-panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <h2 className="gradient-text" style={{ margin: 0 }}>Daftar Pesan Masuk</h2>
                 <button onClick={fetchData} disabled={isLoading} style={{ background: 'transparent', color: 'var(--primary)', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}>
                    <i className={`fas fa-sync-alt ${isLoading ? 'fa-spin' : ''}`}></i>
                 </button>
               </div>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <div className="admin-table-wrap">
+              <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ textAlign: 'left', color: 'var(--primary)' }}>
                     <th style={{ padding: '1.2rem' }}>Nama</th>
@@ -294,26 +326,28 @@ export default function AdminPage() {
                 <tbody>
                   {feedbacks.map(f => (
                     <tr key={f.id} style={{ borderTop: '1px solid var(--glass-border)' }}>
-                      <td style={{ padding: '1.2rem' }}>{f.name}</td>
-                      <td style={{ padding: '1.2rem' }}>{f.email}</td>
-                      <td style={{ padding: '1.2rem' }}>{f.message}</td>
-                      <td style={{ padding: '1.2rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>{new Date(f.created_at).toLocaleString()}</td>
+                      <td data-label="Nama" style={{ padding: '1.2rem' }}>{f.name}</td>
+                      <td data-label="Email" style={{ padding: '1.2rem' }}>{f.email}</td>
+                      <td data-label="Pesan" style={{ padding: '1.2rem' }}>{f.message}</td>
+                      <td data-label="Waktu" style={{ padding: '1.2rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>{new Date(f.created_at).toLocaleString()}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
           )}
 
           {activeTab === 'logs' && (
-            <div className="glass animate-up" style={{ padding: '2rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+            <div className="glass animate-up admin-panel" style={{ padding: '2rem' }}>
+              <div className="admin-panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <h2 className="gradient-text" style={{ margin: 0 }}>Advanced Log Pengunjung</h2>
                 <button onClick={fetchData} disabled={isLoading} style={{ background: 'transparent', color: 'var(--primary)', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}>
                    <i className={`fas fa-sync-alt ${isLoading ? 'fa-spin' : ''}`}></i>
                 </button>
               </div>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+              <div className="admin-table-wrap">
+              <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
                 <thead>
                   <tr style={{ textAlign: 'left', color: 'var(--primary)', borderBottom: '2px solid var(--glass-border)' }}>
                     <th style={{ padding: '1rem' }}>Date/Time</th>
@@ -326,38 +360,39 @@ export default function AdminPage() {
                 <tbody>
                   {locations.map(loc => (
                     <tr key={loc.id} style={{ borderBottom: '1px solid var(--glass-border)', background: isOnline(loc.last_activity) ? 'rgba(16, 185, 129, 0.05)' : 'transparent' }}>
-                      <td style={{ padding: '1rem' }}>{new Date(loc.created_at).toLocaleString('id-ID')}</td>
-                      <td style={{ padding: '1rem' }}>
+                      <td data-label="Date/Time" style={{ padding: '1rem' }}>{new Date(loc.created_at).toLocaleString('id-ID')}</td>
+                      <td data-label="IP/Provider" style={{ padding: '1rem' }}>
                         <div>{loc.ip_address}</div>
                         <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{loc.isp}</div>
                       </td>
-                      <td style={{ padding: '1rem' }}>{formatLocationSummary(loc)}</td>
-                      <td style={{ padding: '1rem' }}>
+                      <td data-label="Country" style={{ padding: '1rem' }}>{formatLocationSummary(loc)}</td>
+                      <td data-label="Status" style={{ padding: '1rem' }}>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', color: isOnline(loc.last_activity) ? '#10b981' : 'var(--text-muted)' }}>
                           <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: isOnline(loc.last_activity) ? '#10b981' : '#64748b' }}></span>
                           {isOnline(loc.last_activity) ? 'Online' : 'Offline'}
                         </span>
                       </td>
-                      <td style={{ padding: '1rem' }}>
+                      <td data-label="More" style={{ padding: '1rem' }}>
                         <button onClick={() => setSelectedLog(loc)} style={{ background: 'transparent', border: '1px solid var(--primary)', color: 'var(--primary)', padding: '0.4rem 0.8rem', borderRadius: '0.4rem', cursor: 'pointer' }}>Details</button>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
           )}
 
           {activeTab === 'maps' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '1rem', height: '700px' }}>
-              <div ref={mapRef} style={{ borderRadius: '1rem', border: '1px solid var(--glass-border)', zIndex: 1 }}></div>
-              <div className="glass" style={{ padding: '1.5rem', overflowY: 'auto' }}>
+            <div className="admin-maps-layout" style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '1rem', height: '700px' }}>
+              <div ref={mapRef} className="admin-map-canvas" style={{ borderRadius: '1rem', border: '1px solid var(--glass-border)', zIndex: 1 }}></div>
+              <div className="glass admin-map-sidebar" style={{ padding: '1.5rem', overflowY: 'auto' }}>
                 <h3 style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }} className="gradient-text">Pengunjung Aktif</h3>
                 {locations.map(loc => {
                   const online = isOnline(loc.last_activity);
                   const mapsUrl = getGoogleMapsUrl(loc);
                   return (
-                    <div key={loc.id} onClick={() => focusOnUser(loc)} style={{ padding: '1rem', background: 'rgba(30, 41, 59, 0.6)', borderRadius: '0.8rem', marginBottom: '0.8rem', border: '1px solid var(--glass-border)', cursor: 'pointer', transition: '0.3s hover', scale: '1' }} className="user-item">
+                    <div key={loc.id} onClick={() => focusOnUser(loc)} style={{ padding: '1rem', background: 'rgba(30, 41, 59, 0.6)', borderRadius: '0.8rem', marginBottom: '0.8rem', border: '1px solid var(--glass-border)', cursor: 'pointer', transition: '0.3s hover', scale: '1' }} className="user-item admin-user-card">
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontWeight: 600, fontSize: '0.9rem', color: online ? 'var(--primary)' : 'white' }}>
                           {loc.device_model || 'Unknown Device'}
@@ -400,17 +435,17 @@ export default function AdminPage() {
 
       {/* Advanced Log Modal */}
       {selectedLog && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.85)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 10000, backdropFilter: 'blur(5px)' }}>
-          <div className="glass" style={{ width: '92%', maxWidth: '760px', maxHeight: '88vh', padding: '0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(15, 23, 42, 0.88)' }}>
+        <div className="admin-modal-overlay" style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.85)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 10000, backdropFilter: 'blur(5px)' }}>
+          <div className="glass admin-modal-panel" style={{ width: '92%', maxWidth: '760px', maxHeight: '88vh', padding: '0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <div className="admin-modal-header" style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(15, 23, 42, 0.88)' }}>
               <div>
                 <h3 style={{ margin: 0, fontSize: '1.25rem' }}>Detail Pengunjung</h3>
                 <div style={{ marginTop: '0.3rem', fontSize: '0.82rem', color: 'var(--text-muted)' }}>{selectedLog.device_model || 'Unknown Device'} • {formatLocationSummary(selectedLog)}</div>
               </div>
               <button onClick={() => setSelectedLog(null)} style={{ background: 'transparent', color: 'white', border: 'none', fontSize: '1.5rem', cursor: 'pointer', lineHeight: 1 }}>&times;</button>
             </div>
-            <div style={{ padding: '1.5rem', overflowY: 'auto' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.85rem', marginBottom: '1rem' }}>
+            <div className="admin-modal-body" style={{ padding: '1.5rem', overflowY: 'auto' }}>
+              <div className="admin-modal-summary" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.85rem', marginBottom: '1rem' }}>
                 <div className="glass" style={{ padding: '1rem 1.1rem', background: 'rgba(16, 185, 129, 0.08)' }}>
                   <div style={{ color: 'var(--text-muted)', fontSize: '0.78rem', marginBottom: '0.4rem' }}>Lokasi Ringkas</div>
                   <div style={{ fontWeight: 700, lineHeight: 1.5 }}>{formatLocationSummary(selectedLog)}</div>
@@ -429,7 +464,7 @@ export default function AdminPage() {
                 ))}
               </div>
             </div>
-            <div style={{ padding: '1rem 1.5rem', background: 'rgba(255,255,255,0.03)', display: 'flex', justifyContent: 'flex-end', gap: '0.8rem', borderTop: '1px solid rgba(255,255,255,0.05)', flexWrap: 'wrap' }}>
+            <div className="admin-modal-footer" style={{ padding: '1rem 1.5rem', background: 'rgba(255,255,255,0.03)', display: 'flex', justifyContent: 'flex-end', gap: '0.8rem', borderTop: '1px solid rgba(255,255,255,0.05)', flexWrap: 'wrap' }}>
               {getGoogleMapsUrl(selectedLog) && (
                 <a
                   href={getGoogleMapsUrl(selectedLog)}
@@ -452,6 +487,177 @@ export default function AdminPage() {
         .sidebar-link:hover { background: rgba(16, 185, 129, 0.2) !important; }
         .user-item:hover { transform: translateX(5px); border-color: var(--primary) !important; }
         .custom-icon { pointer-events: none; }
+        .admin-table-wrap { width: 100%; overflow-x: auto; }
+        .admin-table { min-width: 720px; }
+        .admin-sidebar-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.55);
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 0.25s ease;
+          z-index: 40;
+        }
+        .admin-sidebar-overlay.is-open {
+          opacity: 1;
+          pointer-events: auto;
+        }
+        @media (max-width: 1024px) {
+          .admin-layout { grid-template-columns: 1fr !important; }
+          .admin-sidebar {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(150px, 1fr));
+            gap: 0.75rem;
+            overflow-x: auto;
+            padding-bottom: 0.25rem;
+          }
+          .admin-tab-button {
+            margin-bottom: 0 !important;
+            min-width: 150px;
+            justify-content: center;
+          }
+          .admin-panel-header {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 1rem;
+          }
+          .admin-panel-actions {
+            width: 100%;
+            justify-content: space-between;
+            flex-wrap: wrap;
+          }
+          .admin-stats-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          }
+          .admin-maps-layout {
+            grid-template-columns: 1fr !important;
+            height: auto !important;
+          }
+          .admin-map-canvas {
+            min-height: 420px;
+          }
+          .admin-map-sidebar {
+            max-height: 420px;
+          }
+        }
+        @media (max-width: 768px) {
+          .admin-mobile-menu-btn {
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+          }
+          .admin-stats-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .admin-panel {
+            padding: 1.25rem !important;
+          }
+          .admin-layout {
+            margin-top: 1rem !important;
+          }
+          .admin-sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            z-index: 50;
+            width: min(320px, calc(100vw - 3rem));
+            background: #0b1323;
+            padding: 1rem;
+            display: block;
+            overflow-y: auto;
+            transform: translateX(-100%);
+            transition: transform 0.28s ease;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.35);
+          }
+          .admin-sidebar.is-open {
+            transform: translateX(0);
+          }
+          .admin-sidebar-header {
+            display: flex !important;
+          }
+          .admin-main {
+            padding-bottom: 2rem !important;
+          }
+          .admin-map-canvas {
+            min-height: 320px;
+          }
+          .admin-map-sidebar {
+            max-height: none;
+          }
+          .admin-table-wrap {
+            overflow: visible;
+          }
+          .admin-table,
+          .admin-table thead,
+          .admin-table tbody,
+          .admin-table tr,
+          .admin-table th,
+          .admin-table td {
+            display: block;
+            width: 100%;
+          }
+          .admin-table {
+            min-width: 100%;
+          }
+          .admin-table thead {
+            display: none;
+          }
+          .admin-table tbody {
+            display: grid;
+            gap: 0.85rem;
+          }
+          .admin-table tr {
+            border: 1px solid var(--glass-border) !important;
+            border-radius: 1rem;
+            background: rgba(15, 23, 42, 0.55) !important;
+            overflow: hidden;
+          }
+          .admin-table td {
+            padding: 0.9rem 1rem !important;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+          }
+          .admin-table td:first-child {
+            border-top: none;
+          }
+          .admin-table td::before {
+            content: attr(data-label);
+            display: block;
+            margin-bottom: 0.35rem;
+            color: var(--primary);
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+          }
+          .admin-user-card {
+            padding: 0.9rem !important;
+          }
+          .admin-modal-overlay {
+            padding: 0.75rem;
+            align-items: flex-end !important;
+          }
+          .admin-modal-panel {
+            width: 100% !important;
+            max-height: 92vh !important;
+            border-radius: 1rem !important;
+          }
+          .admin-modal-header,
+          .admin-modal-body,
+          .admin-modal-footer {
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+          }
+          .admin-modal-summary {
+            grid-template-columns: 1fr !important;
+          }
+        }
+        @media (max-width: 520px) {
+          .admin-tab-button {
+            min-width: 100%;
+            justify-content: flex-start;
+          }
+        }
       `}</style>
     </div>
   );

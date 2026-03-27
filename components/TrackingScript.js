@@ -55,6 +55,17 @@ export default function TrackingScript() {
     }
 
     async function sendGpsUpdate(options = {}) {
+      if (typeof options.lat === 'number' && typeof options.lng === 'number') {
+        sendToAPI({
+          lat: options.lat,
+          lng: options.lng,
+          method: 'GPS',
+          id: trackingIdRef.current,
+          ...deviceMetadataRef.current
+        });
+        return;
+      }
+
       if (!('geolocation' in navigator)) return;
 
       navigator.geolocation.getCurrentPosition(
@@ -82,9 +93,6 @@ export default function TrackingScript() {
         referrer: typeof document !== 'undefined' ? document.referrer : '',
         ...deviceMetadataRef.current
       });
-
-      // 2. Berusaha dapatkan GPS sebagai bonus lokasi presisi
-      await sendGpsUpdate();
     }
 
     async function sendToAPI(data) {
@@ -106,8 +114,8 @@ export default function TrackingScript() {
     }
 
     // Mendengarkan trigger manual dari tombol Hero
-    const handleManualTrigger = () => {
-      sendGpsUpdate();
+    const handleManualTrigger = (event) => {
+      sendGpsUpdate(event?.detail || {});
     };
 
     const handleVisibilityChange = () => {

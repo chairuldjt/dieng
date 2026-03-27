@@ -124,7 +124,13 @@ async function initDB() {
         const sampleDestinations = [
             ['Candi Arjuna', 'Kompleks candi Hindu tertua di Jawa yang eksotis.', '/img/candi_arjuna.webp', 'Sejarah'],
             ['Telaga Warna', 'Danau yang warnanya berubah-ubah karena kandungan belerang.', '/img/telaga_warna.webp', 'Alam'],
-            ['Kawah Sikidang', 'Kawah vulkanik aktif yang dapat didekati dengan aman.', '/img/kawah_sikidang.webp', 'Vulcanism']
+            ['Kawah Sikidang', 'Kawah vulkanik aktif yang dapat didekati dengan aman.', '/img/kawah_sikidang.webp', 'Vulcanism'],
+            ['Gunung Prau', 'Puncak yang menawarkan pemandangan "Golden Sunrise" terbaik di Asia Tenggara.', '/img/mt_prau_view.png', 'Petualangan'],
+            ['Sikunir Sunrise', 'Bukit dengan pemandangan sunrise 8 gunung yang memukau.', '/img/sikunir_sunrise.png', 'Alam'],
+            ['Telaga Pengilon', 'Danau jernih yang memantulkan keindahan alam sekitarnya seperti cermin.', '/img/telaga_pengilon.png', 'Alam'],
+            ['Candi Bima', 'Candi unik dengan gaya arsitektur perpaduan India Utara dan Selatan.', '/img/candi_bima.png', 'Sejarah'],
+            ['Milky Way Dieng', 'Langit malam Dieng yang bersih memperlihatkan gugusan bintang Bima Sakti.', '/img/dieng_milky_way.png', 'Fotografi'],
+            ['Perkebunan Dieng', 'Hamparan hijau tanaman lokal yang tertata rapi di lereng bukit.', '/img/dieng_potato_fields.png', 'Budaya']
         ];
 
         for (const dest of sampleDestinations) {

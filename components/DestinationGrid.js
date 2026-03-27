@@ -8,46 +8,112 @@ export default function DestinationGrid() {
 
   useEffect(() => {
     fetch('/api/destinations')
-      .then(res => res.json())
-      .then(data => {
+      .then((res) => res.json())
+      .then((data) => {
         setDestinations(data);
         setLoading(false);
       })
-      .catch(err => setLoading(false));
+      .catch(() => setLoading(false));
   }, []);
 
-  if (loading) return <div style={{ textAlign: 'center', padding: '5rem' }}>Memuat keajaiban Dieng...</div>;
+  if (loading) {
+    return <div className="container" style={{ padding: '5rem 0', textAlign: 'center', color: 'var(--text-muted)' }}>Memuat keajaiban Dieng...</div>;
+  }
 
   return (
-    <section id="destinations" className="container" style={{ padding: '8rem 0' }}>
-      <h2 style={{ fontSize: '2.5rem', marginBottom: '3rem', textAlign: 'center' }}>
-        Destinasi <span className="gradient-text">Pilihan</span>
-      </h2>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
-        {destinations.map(dest => (
-          <div key={dest.id} className="glass" style={{
-            overflow: 'hidden',
-            position: 'relative',
-            cursor: 'pointer',
-            height: '400px'
-          }} onClick={() => setSelected(dest)}>
-            <img src={dest.image_url} alt={dest.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', padding: '2rem', background: 'linear-gradient(transparent, rgba(15, 23, 42, 0.9))' }}>
-              <span className="gradient-text" style={{ fontWeight: 600, fontSize: '0.8rem', textTransform: 'uppercase' }}>{dest.category}</span>
-              <h3 style={{ fontSize: '1.5rem', marginTop: '0.5rem' }}>{dest.name}</h3>
+    <section id="destinations" className="destinations">
+      <div className="container">
+        <div className="story-section" style={{ padding: 0, marginBottom: '2.8rem' }}>
+          <div className="story-grid">
+            <div className="story-card glass">
+              <div>
+                <span className="section-eyebrow">Atmosfer Dieng</span>
+                <h2>Destinasi terbaik di sini terasa kuat justru saat semuanya berjalan lebih pelan.</h2>
+              </div>
+              <p>
+                Dieng bukan kumpulan spot yang berdiri sendiri. Ia bekerja sebagai rangkaian suasana: dingin pagi,
+                tanah vulkanik, warna telaga, lalu sunyi yang datang dari dataran tinggi.
+              </p>
+            </div>
+
+            <div className="story-list glass">
+              <div style={{ marginBottom: '1rem' }}>
+                <span className="section-eyebrow">Trip Rhythm</span>
+                <h2 className="section-title" style={{ marginTop: '0.9rem' }}>Mulai dari tiga pengalaman yang paling membekas.</h2>
+              </div>
+              <div className="story-pillars">
+                <div className="story-pillar">
+                  <div className="story-pillar__count">01</div>
+                  <div>
+                    <h3>Fajar yang terasa dekat</h3>
+                    <p>Sikunir menghadirkan pembuka paling kuat untuk melihat lapisan awan dan cahaya dari ketinggian.</p>
+                  </div>
+                </div>
+                <div className="story-pillar">
+                  <div className="story-pillar__count">02</div>
+                  <div>
+                    <h3>Alam yang tetap aktif</h3>
+                    <p>Kawah Sikidang memberi energi visual yang kontras, panas, dan bergerak di tengah udara dingin.</p>
+                  </div>
+                </div>
+                <div className="story-pillar">
+                  <div className="story-pillar__count">03</div>
+                  <div>
+                    <h3>Sejarah di pegunungan</h3>
+                    <p>Candi Arjuna membuat itinerary lebih seimbang karena menghadirkan jeda yang hening dan ikonik.</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        ))}
+        </div>
+
+        <div className="destinations__header">
+          <div>
+            <span className="section-eyebrow">Curated Route</span>
+            <h2 className="section-title" style={{ marginTop: '0.9rem' }}>Destinasi yang paling kuat secara visual dan rasa perjalanan.</h2>
+          </div>
+          <p className="section-copy">
+            Kami kurasi spot yang paling cocok untuk trip singkat namun tetap terasa penuh. Cocok untuk pemburu foto,
+            perjalanan keluarga, atau sekadar ingin menghirup Dieng tanpa terburu-buru.
+          </p>
+        </div>
+
+        <div className="destinations__grid">
+          {destinations.map((dest) => (
+            <article key={dest.id} className="destination-card" onClick={() => setSelected(dest)}>
+              <img src={dest.image_url} alt={dest.name} />
+              <div className="destination-card__content">
+                <div className="destination-card__meta">
+                  <span>{dest.category}</span>
+                  <div className="destination-card__arrow">↗</div>
+                </div>
+                <h3>{dest.name}</h3>
+                <p>{dest.description}</p>
+              </div>
+            </article>
+          ))}
+        </div>
       </div>
 
-      {/* Modal Detail */}
       {selected && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2000 }}>
-          <div className="glass" style={{ maxWidth: '600px', width: '90%', padding: '2rem', position: 'relative' }}>
-            <button onClick={() => setSelected(null)} style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'transparent', color: 'white', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}>&times;</button>
-            <h2 className="gradient-text" style={{ fontSize: '2rem' }}>{selected.name}</h2>
-            <img src={selected.image_url} style={{ width: '100%', borderRadius: '1rem', margin: '1.5rem 0' }} />
-            <p style={{ color: 'var(--text-muted)', lineHeight: 1.8 }}>{selected.description}</p>
+        <div className="destination-modal" onClick={() => setSelected(null)}>
+          <div className="destination-modal__panel glass" onClick={(e) => e.stopPropagation()}>
+            <button type="button" className="modal-close" onClick={() => setSelected(null)}>&times;</button>
+            <div className="destination-modal__body">
+              <div className="destination-modal__media">
+                <img src={selected.image_url} alt={selected.name} />
+              </div>
+              <div className="destination-modal__content">
+                <span className="section-eyebrow">{selected.category}</span>
+                <h2 className="gradient-text">{selected.name}</h2>
+                <p>{selected.description}</p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.85rem', marginTop: '1.5rem' }}>
+                  <a href="#contact" className="btn-primary" onClick={() => setSelected(null)}>Rencanakan Kunjungan</a>
+                  <button type="button" className="btn-secondary" onClick={() => setSelected(null)}>Lanjut Jelajah</button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}

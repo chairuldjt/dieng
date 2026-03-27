@@ -1,18 +1,25 @@
 import Navbar from '@/components/Navbar';
+import LandingIntro from '@/components/LandingIntro';
 import Hero from '@/components/Hero';
 import DestinationGrid from '@/components/DestinationGrid';
+import CostEstimator from '@/components/CostEstimator';
+import Gallery from '@/components/Gallery';
 import ContactForm from '@/components/ContactForm';
 
 export default function Home() {
   return (
-    <main>
+    <main className="site-shell">
+      <LandingIntro />
       <Navbar />
       <Hero />
       <DestinationGrid />
+      <CostEstimator />
+      <Gallery />
       <ContactForm />
-      <footer style={{ padding: '4rem 0', borderTop: '1px solid var(--glass-border)', textAlign: 'center', color: 'var(--text-muted)' }}>
-        <div className="container">
-          <p>&copy; 2024 Dieng Explorer. Dibuat dengan cinta untuk Indonesia dengan Next.js.</p>
+      <footer className="site-footer">
+        <div className="container site-footer__inner">
+          <p>&copy; 2026 Dieng Explorer. Negeri di atas awan yang paling indah dinikmati pelan-pelan.</p>
+          <p>Redesigned untuk pengalaman yang lebih kuat di desktop maupun mobile.</p>
         </div>
       </footer>
     </main>
