@@ -13,8 +13,8 @@ export default function TrackingScript() {
   const pendingGpsRef = useRef(null);
 
   useEffect(() => {
-    const MIN_MOVEMENT_METERS = 30;
-    const SIGNIFICANT_ACCURACY_IMPROVEMENT = 20;
+    const MIN_MOVEMENT_METERS = 8;
+    const SIGNIFICANT_ACCURACY_IMPROVEMENT = 8;
     const TARGET_ACCURACY_METERS = 30;
     const MAX_WATCH_DURATION_MS = 20000;
     const GPS_REFRESH_MIN_MS = 15000;
