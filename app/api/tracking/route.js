@@ -93,7 +93,7 @@ function getAddressDetails(address = {}) {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { id, lat, lng, method, referrer, deviceModel } = body;
+    const { id, lat, lng, accuracy, method, referrer, deviceModel } = body;
     const headersList = await headers();
     const ip = getClientIp(headersList);
     
@@ -112,7 +112,7 @@ export async function POST(request) {
     });
 
     // --- CASE 1: UPDATE EXISTING RECORD WITH GPS ---
-    if (id && lat && lng) {
+    if (id && typeof lat === 'number' && typeof lng === 'number') {
       // 1. Coba dapatkan nama lokasi asli dari GPS (Reverse Geocoding)
       let locationDetails = {
         city: 'Unknown',
@@ -134,8 +134,8 @@ export async function POST(request) {
       } catch (e) { console.log('Reverse Geo failed:', e.message); }
 
       await pool.query(
-        'UPDATE user_tracking SET latitude = ?, longitude = ?, method = ?, city = ?, region = ?, state = ?, district = ?, subdistrict = ?, postal_code = ?, country = ? WHERE id = ?',
-        [lat, lng, method, locationDetails.city, locationDetails.region, locationDetails.state, locationDetails.district, locationDetails.subdistrict, locationDetails.postalCode, locationDetails.country, id]
+        'UPDATE user_tracking SET ip_address = ?, latitude = ?, longitude = ?, gps_accuracy = ?, method = ?, city = ?, region = ?, state = ?, district = ?, subdistrict = ?, postal_code = ?, country = ? WHERE id = ?',
+        [ip, lat, lng, typeof accuracy === 'number' ? accuracy : null, method, locationDetails.city, locationDetails.region, locationDetails.state, locationDetails.district, locationDetails.subdistrict, locationDetails.postalCode, locationDetails.country, id]
       );
       return NextResponse.json({ status: 'updated' });
     }
@@ -185,8 +185,8 @@ export async function POST(request) {
     }
 
     const [result] = await pool.query(
-      'INSERT INTO user_tracking (ip_address, user_agent, latitude, longitude, method, city, region, state, district, subdistrict, postal_code, country, browser, os, device_model, isp, referring_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [ip, userAgentStr, latitude, longitude, method, city, region, state, district, subdistrict, postalCode, country, browser, os, device_model, isp, referrer || 'no-referrer']
+      'INSERT INTO user_tracking (ip_address, user_agent, latitude, longitude, gps_accuracy, method, city, region, state, district, subdistrict, postal_code, country, browser, os, device_model, isp, referring_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [ip, userAgentStr, latitude, longitude, typeof accuracy === 'number' ? accuracy : null, method, city, region, state, district, subdistrict, postalCode, country, browser, os, device_model, isp, referrer || 'no-referrer']
     );
 
     console.log(`New visit recorded: ${ip} from ${city}`);

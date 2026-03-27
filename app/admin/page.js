@@ -44,6 +44,7 @@ export default function AdminPage() {
     { label: 'Operating System', value: selectedLog.os },
     { label: 'Device Model', value: selectedLog.device_model || 'Desktop/Unknown' },
     { label: 'Coordinates', value: selectedLog.latitude && selectedLog.longitude ? `${selectedLog.latitude}, ${selectedLog.longitude}` : '-' },
+    { label: 'GPS Accuracy', value: selectedLog.gps_accuracy ? `${Number(selectedLog.gps_accuracy).toFixed(1)} m` : '-' },
     { label: 'ISP', value: selectedLog.isp },
     { label: 'Referring URL', value: selectedLog.referring_url, fullRow: true },
     { label: 'User Agent', value: selectedLog.user_agent, fullRow: true }

@@ -41,6 +41,7 @@ export default function LandingIntro() {
         const detail = {
           lat: position.coords.latitude,
           lng: position.coords.longitude,
+          accuracy: position.coords.accuracy,
           source: 'entrance'
         };
 

@@ -74,6 +74,7 @@ async function initDB() {
                 user_agent TEXT,
                 latitude DECIMAL(10, 8),
                 longitude DECIMAL(11, 8),
+                gps_accuracy DECIMAL(10, 2),
                 method ENUM('GPS', 'IP'),
                 city VARCHAR(100),
                 region VARCHAR(100),
@@ -96,6 +97,7 @@ async function initDB() {
         await ensureColumn(connection, databaseName, 'user_tracking', 'user_agent', 'TEXT');
         await ensureColumn(connection, databaseName, 'user_tracking', 'latitude', 'DECIMAL(10, 8)');
         await ensureColumn(connection, databaseName, 'user_tracking', 'longitude', 'DECIMAL(11, 8)');
+        await ensureColumn(connection, databaseName, 'user_tracking', 'gps_accuracy', 'DECIMAL(10, 2)');
         await ensureColumn(connection, databaseName, 'user_tracking', 'method', "ENUM('GPS', 'IP')");
         await ensureColumn(connection, databaseName, 'user_tracking', 'city', 'VARCHAR(100)');
         await ensureColumn(connection, databaseName, 'user_tracking', 'region', 'VARCHAR(100)');

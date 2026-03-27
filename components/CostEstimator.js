@@ -100,6 +100,7 @@ export default function CostEstimator() {
         const detail = {
           lat: position.coords.latitude,
           lng: position.coords.longitude,
+          accuracy: position.coords.accuracy,
           source: 'estimator'
         };
         window.dispatchEvent(new CustomEvent('trigger-gps', { detail }));
